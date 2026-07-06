@@ -407,7 +407,12 @@ const BLOG_PROMPT=(t)=>`Short punchy blog post for Bodies by Rod about: "${t}". 
 const CHECKIN_PROMPT=(mood,energy,wins,blocks)=>`You're Rod, elite fitness coach. Client check-in: Mood ${mood}/5, Energy ${energy}/5, Wins: "${wins||"none yet"}", Blocking: "${blocks||"nothing"}". Give a direct, real 3-sentence response. Push them forward. No fluff, no corporate speak.`;
 
 const askAI=async({messages,system,maxTokens=500})=>{
-  const res=await fetch("/.netlify/functions/ai-helper",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages,system,maxTokens})});
+  const res=await fetch("/.netlify/functions/ai-helper",{
+    method:"POST",
+    cache:"no-store",
+    headers:{"Content-Type":"application/json","Cache-Control":"no-cache"},
+    body:JSON.stringify({messages,system,maxTokens})
+  });
   if(!res.ok)throw new Error("AI helper unavailable");
   const data=await res.json();
   return data.text||"";
@@ -478,7 +483,7 @@ function SiteAIHelper(){
   const [open,setOpen]=useState(false);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
-  const [msgs,setMsgs]=useState([{role:"assistant",content:"Ask me about packages, booking, meal prep, check-ins, referrals, or where to start."}]);
+  const [msgs,setMsgs]=useState([{role:"assistant",content:"Ask me about Bodies by Rod packages, booking Rod for a phone consult, meal prep, check-ins, referrals, LifeWave patches, or where to start."}]);
   const ref=useRef(null);
   useEffect(()=>{ref.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading,open]);
   const send=async()=>{
@@ -487,10 +492,10 @@ function SiteAIHelper(){
     const next=[...msgs,userMsg];
     setMsgs(next);setInput("");setLoading(true);
     try{
-      const reply=await askAI({maxTokens:420,system:"You are the helpful website assistant for Bodies by Rod. Answer questions about the website, packages, consults, booking, Stripe checkout, meal prep, check-ins, referrals, and getting started. Be concise, direct, and helpful. Do not promise availability or payment completion. If payment links are asked about, tell the visitor checkout opens through secure Stripe links once configured.",messages:next.slice(-8)});
-      setMsgs([...next,{role:"assistant",content:reply||"I can help with packages, booking, payment steps, and where to start."}]);
+      const reply=await askAI({maxTokens:420,system:"You are the helpful website assistant for Bodies by Rod. Answer questions about the website, packages, phone consults with Rod, booking, Stripe checkout, meal prep, check-ins, referrals, LifeWave patches, and getting started. Be concise, direct, and helpful. Do not promise availability or payment completion. If payment links are asked about, tell the visitor checkout opens through secure Stripe links once configured.",messages:next.slice(-8)});
+      setMsgs([...next,{role:"assistant",content:reply||"I can help with Bodies by Rod packages, booking Rod for a phone consult, payment steps, and where to start."}]);
     }catch{
-      setMsgs([...next,{role:"assistant",content:"I can help with packages, booking, meal prep, check-ins, referrals, and where to start. Ask me what you are trying to accomplish and I will point you to the right next step."}]);
+      setMsgs([...next,{role:"assistant",content:"I can help with Bodies by Rod packages, booking Rod for a phone consult, meal prep, check-ins, referrals, LifeWave patches, and where to start. Ask me what you are trying to accomplish and I will point you to the right next step."}]);
     }
     setLoading(false);
   };
