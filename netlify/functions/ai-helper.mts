@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const anthropic = new Anthropic();
 
-const MODEL = "claude-sonnet-4-5";
+const MODEL = "claude-opus-4-8";
 
 export default async (req: Request) => {
   if (req.method !== "POST") {
@@ -11,7 +11,14 @@ export default async (req: Request) => {
 
   try {
     const body = await req.json();
-    const messages = Array.isArray(body.messages) ? body.messages : [];
+    const messages = Array.isArray(body.messages)
+      ? body.messages
+          .map((message: { role?: string; content?: string }) => ({
+            role: message.role === "assistant" ? "assistant" : "user",
+            content: String(message.content || "").slice(0, 4000).trim(),
+          }))
+          .filter((message: { content: string }) => message.content.length > 0)
+      : [];
     const system = typeof body.system === "string" ? body.system : undefined;
     const maxTokens = Number.isFinite(body.maxTokens) ? Math.min(Math.max(body.maxTokens, 80), 1200) : 500;
 
@@ -23,10 +30,7 @@ export default async (req: Request) => {
       model: MODEL,
       max_tokens: maxTokens,
       ...(system ? { system } : {}),
-      messages: messages.map((message: { role?: string; content?: string }) => ({
-        role: message.role === "assistant" ? "assistant" : "user",
-        content: String(message.content || "").slice(0, 4000),
-      })),
+      messages,
     });
 
     const text = response.content
@@ -34,6 +38,10 @@ export default async (req: Request) => {
       .map((part) => part.text)
       .join("\n")
       .trim();
+
+    if (!text) {
+      return Response.json({ error: "AI returned an empty response" }, { status: 502 });
+    }
 
     return Response.json({ text });
   } catch (error) {
