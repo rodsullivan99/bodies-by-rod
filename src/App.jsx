@@ -406,11 +406,112 @@ const WO_PROMPT=(g,l,d,f)=>`Bodies by Rod trainer. ${d}-day plan. Goal:${g} Leve
 const BLOG_PROMPT=(t)=>`Short punchy blog post for Bodies by Rod about: "${t}". 3 short paragraphs. Street energy, direct, no fluff. No headers or markdown.`;
 const CHECKIN_PROMPT=(mood,energy,wins,blocks)=>`You're Rod, elite fitness coach. Client check-in: Mood ${mood}/5, Energy ${energy}/5, Wins: "${wins||"none yet"}", Blocking: "${blocks||"nothing"}". Give a direct, real 3-sentence response. Push them forward. No fluff, no corporate speak.`;
 
+const buildWorkoutFallback=(prompt="")=>{
+  const days=Math.max(3,Math.min(6,parseInt((prompt.match(/(\d+)-day plan/)||[])[1]||"4")||4));
+  const focus=(prompt.match(/Focus:([^.]*)/)||[])[1]?.trim()||"Full Body";
+  const goal=(prompt.match(/Goal:([^ ](?:.*?)) Level:/)||[])[1]?.trim()||"Build Muscle";
+  const levelSets=prompt.includes("Beginner")?["3x10","3x12","3 rounds"]:prompt.includes("Advanced")?["5x5","4x8","5 rounds"]:["4x8","3x10","4 rounds"];
+  const planKey=goal==="Lose Weight"||focus==="Cardio + Strength"?"conditioning":goal==="Athletic Performance"?"athletic":goal==="Increase Strength"?"strength":goal==="Tone & Define"?"tone":"muscle";
+  const plans={
+    muscle:[
+      ["Day 1 - Push: Chest, Shoulders, Triceps",[["Barbell Bench Press",levelSets[0],"Pin the shoulder blades, touch the lower chest under control, and press without bouncing."],["Incline Dumbbell Press",levelSets[1],"Keep elbows slightly tucked and drive the dumbbells up over the upper chest."],["Seated Shoulder Press","3x8-10","Brace the ribs down and press straight overhead without leaning back."],["Cable Fly","3x12-15","Open wide, keep a soft elbow, and squeeze the chest without shrugging."],["Rope Triceps Pressdown","3x12-15","Lock elbows by your sides and finish each rep with a hard triceps squeeze."]]],
+      ["Day 2 - Pull: Back, Rear Delts, Biceps",[["Pull-Up or Lat Pulldown",levelSets[0],"Start with the shoulder blades down, pull elbows to ribs, and control the stretch."],["Chest-Supported Row",levelSets[1],"Keep chest glued to the pad and pull through the elbows, not the hands."],["Single-Arm Dumbbell Row","3x10/side","Let the shoulder blade reach, then drive the elbow toward your hip."],["Face Pull","3x15","Pull toward eye level and rotate thumbs back to light up rear delts."],["Dumbbell Curl","3x10-12","Keep elbows still and lower each rep slow."]]],
+      ["Day 3 - Legs: Quads, Hamstrings, Glutes",[["Back Squat",levelSets[0],"Brace, sit between the hips, keep knees tracking over toes, and stand tall."],["Romanian Deadlift",levelSets[1],"Push hips back, keep the weight close, and stop when hamstrings are loaded."],["Leg Press","3x12","Use a full range you can control and do not let hips roll off the pad."],["Walking Lunge","3x10/leg","Step long, stay balanced, and push through the front heel."],["Standing Calf Raise","4x12-15","Pause high, stretch low, and keep reps clean."]]],
+      ["Day 4 - Upper Volume",[["Incline Bench Press","4x8-10","Use a controlled lower and keep tension on the chest."],["Seated Cable Row","4x10","Pull to ribs, pause, then return without rounding."],["Dumbbell Lateral Raise","4x12-15","Lead with elbows and stop around shoulder height."],["Close-Grip Push-Up","3xAMRAP","Keep the body straight and stop one rep before form breaks."],["Hammer Curl","3x12","Keep wrists neutral and squeeze the forearm and biceps together."]]],
+      ["Day 5 - Lower Volume + Core",[["Front Squat","4x8","Keep elbows high, ribs locked, and torso upright."],["Hip Thrust","4x10","Tuck the pelvis slightly and squeeze glutes at the top."],["Leg Curl","3x12-15","Control the negative and do not let the hips pop up."],["Split Squat","3x10/leg","Drop straight down and drive through the front foot."],["Hanging Knee Raise","3x12","Curl the pelvis up instead of swinging."]]],
+      ["Day 6 - Weak Point Pump",[["Machine Chest Press","3x12","Smooth reps, no lockout slam, keep chest loaded."],["Neutral-Grip Pulldown","3x12","Pull elbows down and keep shoulders away from ears."],["Cable Lateral Raise","3x15/side","Keep constant tension and avoid swinging."],["Reverse Pec Deck","3x15","Open through rear delts, not traps."],["Sled Push or Incline Walk","10-15 min","Finish strong without turning it into sloppy cardio."]]],
+    ],
+    conditioning:[
+      ["Day 1 - Strength Circuit + Zone 2",[["Goblet Squat","3x12","Stay tall, elbows inside knees, and own the bottom position."],["Push-Up","3xAMRAP","Body straight, chest down, stop before your hips sag."],["TRX or Cable Row","3x12","Pull shoulder blades back and keep ribs down."],["Kettlebell Deadlift","3x12","Hinge at the hips and stand by squeezing glutes."],["Incline Walk or Bike","20-30 min","Keep a pace where breathing is working but controlled."]]],
+      ["Day 2 - Intervals + Core",[["Bike Sprint","10x20 sec","Push hard for 20 seconds, then recover easy for 70 seconds."],["Dead Bug","3x10/side","Press low back down and move slow."],["Side Plank","3x30 sec/side","Stack shoulders and hips without twisting."],["Step-Up","3x10/leg","Drive through the working leg and control the way down."],["Farmer Carry","4x40 yd","Walk tall, ribs down, handles squeezed."]]],
+      ["Day 3 - Full Body Metabolic",[["Dumbbell Thruster","4x10","Squat clean and press in one strong motion."],["Romanian Deadlift","3x12","Load hamstrings and keep the back flat."],["Lat Pulldown","3x12","Control the stretch and pull to upper chest."],["Reverse Lunge","3x10/leg","Step back, stay tall, and push through the front heel."],["Row Machine","8x250 m","Hard but repeatable pace; do not die on round one."]]],
+      ["Day 4 - Endurance Base",[["Brisk Walk, Bike, or Elliptical","35-45 min","Stay in a steady pace you can hold without stopping."],["Bodyweight Squat","3x15","Control depth and keep knees tracking."],["Incline Push-Up","3x12","Use a height that lets every rep stay clean."],["Band Pull-Apart","3x20","Open the chest and squeeze upper back."],["Mobility Flow","8-10 min","Move through hips, hamstrings, calves, and t-spine."]]],
+      ["Day 5 - Conditioning Ladder",[["Sled Push or Treadmill Push","6x30 sec","Drive hard, recover fully enough to repeat quality."],["Dumbbell Clean","4x8/side","Use hips first and catch with a tight core."],["Walking Lunge","3x12/leg","Long step, steady torso, front heel pressure."],["Plank Shoulder Tap","3x20 taps","Keep hips quiet while hands move."],["Easy Cooldown","10 min","Bring breathing down before you leave."]]],
+      ["Day 6 - Recovery Cardio + Core",[["Zone 2 Cardio","30-40 min","Comfortably hard, steady, no sprinting."],["Cable Wood Chop","3x12/side","Rotate through the trunk while hips stay planted."],["Glute Bridge","3x15","Squeeze glutes and keep ribs down."],["Face Pull","3x15","Pull to eyes and rotate thumbs back."],["Stretch Reset","10 min","Prioritize hips, chest, lats, and calves."]]],
+    ],
+    athletic:[
+      ["Day 1 - Acceleration + Lower Power",[["Sprint Build-Up","6x20 yd","Start smooth, stay low, and accelerate without popping up early."],["Trap Bar Deadlift","5x3","Explode from the floor with perfect bracing."],["Box Jump","5x3","Land soft, step down, and keep every rep crisp."],["Rear-Foot Elevated Split Squat","3x8/leg","Control down and drive up hard."],["Pallof Press","3x12/side","Resist rotation and keep ribs stacked over hips."]]],
+      ["Day 2 - Upper Power + Pull",[["Medicine Ball Chest Pass","5x5","Throw hard from the chest and reset each rep."],["Push Press","4x5","Dip straight down, drive with legs, and finish overhead."],["Weighted Pull-Up or Pulldown","4x6-8","Pull fast while keeping shoulder blades controlled."],["Single-Arm Cable Row","3x10/side","Rotate slightly, then pull elbow to hip."],["Face Pull","3x15","Keep shoulders healthy and rear delts active."]]],
+      ["Day 3 - Conditioning Agility",[["Shuttle Run","8 rounds","Change direction low and under control."],["Lateral Bound","4x6/side","Stick the landing before the next rep."],["Kettlebell Swing","4x15","Snap hips; do not squat the swing."],["Walking Lunge","3x10/leg","Own balance and knee position."],["Hollow Hold","3x30 sec","Low back down, ribs tucked, breathe."]]],
+      ["Day 4 - Total Body Strength",[["Front Squat","4x5","Elbows high, brace hard, and move the bar fast."],["Bench Press","4x5","Control down, drive up, keep shoulders packed."],["Romanian Deadlift","3x8","Load hamstrings without losing back position."],["Chest-Supported Row","3x10","Pull strong and pause."],["Farmer Carry","5x30 yd","Heavy, tall, controlled."]]],
+      ["Day 5 - Speed Endurance",[["Tempo Run","10x100 m","Fast but smooth; walk back recovery."],["Sled Push","6x20 yd","Drive knees and keep torso angled."],["Dumbbell Snatch","4x5/side","Hips first, punch overhead, control down."],["Copenhagen Plank","3x20 sec/side","Keep hips high and adductors tight."],["Mobility Reset","10 min","Open ankles, hips, and t-spine."]]],
+      ["Day 6 - Recovery Skill Work",[["Easy Bike or Jog","25-35 min","Stay light and conversational."],["Jump Rope","8x45 sec","Relax shoulders and keep rhythm."],["Single-Leg RDL","3x8/leg","Reach hips back and keep balance."],["Band External Rotation","3x15/side","Control the shoulder and move clean."],["Breathing Reset","5 min","Nasal breathing, slow exhale, bring the nervous system down."]]],
+    ],
+    strength:[
+      ["Day 1 - Squat Strength",[["Back Squat",levelSets[0],"Brace hard, hit depth you own, and drive up with the whole foot."],["Pause Squat","3x3","Hold the bottom for two seconds without relaxing."],["Romanian Deadlift","4x6","Heavy hinge, tight lats, hamstrings loaded."],["Leg Press","3x8","Controlled depth and strong drive."],["Weighted Plank","3x40 sec","Stay locked from ribs to hips."]]],
+      ["Day 2 - Bench Strength",[["Bench Press",levelSets[0],"Set upper back, lower with control, press through the same path."],["Close-Grip Bench Press","4x6","Elbows tucked and triceps driving."],["Chest-Supported Row","4x8","Balance pressing with strong upper-back work."],["Dumbbell Shoulder Press","3x8","No leaning back; ribs down."],["Rope Pressdown","3x12","Finish the elbow lockout hard."]]],
+      ["Day 3 - Deadlift Strength",[["Deadlift",levelSets[0],"Brace before you pull, push the floor, and finish with glutes."],["Block Pull","3x4","Start tight and move heavy weight without jerking."],["Front Squat","3x6","Keep torso upright and elbows high."],["Hamstring Curl","3x10","Control both directions."],["Farmer Carry","4x40 yd","Grip hard and walk tall."]]],
+      ["Day 4 - Overhead + Pull Strength",[["Standing Overhead Press","5x5","Squeeze glutes, ribs down, bar path straight."],["Weighted Pull-Up","4x6","Full hang to strong finish."],["Barbell Row","4x6","Brace and pull to lower ribs."],["Incline Dumbbell Press","3x8","Controlled reps after heavy press work."],["Hammer Curl","3x10","Build elbow and grip strength."]]],
+      ["Day 5 - Strength Volume",[["Front Squat","4x5","Speed out of the bottom with tight position."],["Bench Press","4x6","Clean volume, no grinding early."],["Trap Bar Deadlift","3x5","Powerful reps without form breakdown."],["Seated Cable Row","3x10","Pause at the ribs."],["Ab Wheel","3x8","Move only as far as you can control."]]],
+      ["Day 6 - Recovery + Carries",[["Incline Walk","20 min","Low stress conditioning to support recovery."],["Sled Drag","6x40 yd","Smooth steps and steady tension."],["Goblet Squat","3x12","Open hips and keep position clean."],["Face Pull","3x15","Shoulder health work."],["Suitcase Carry","3x40 yd/side","Do not lean; fight the weight."]]],
+    ],
+    tone:[
+      ["Day 1 - Lower Body Shape",[["Goblet Squat","4x12","Stay tall and keep constant tension."],["Hip Thrust","4x12","Pause at the top and squeeze glutes."],["Romanian Deadlift","3x12","Slow lower, hamstrings loaded."],["Walking Lunge","3x12/leg","Long step, steady balance."],["Incline Walk","15 min","Steady finish, no holding the rails."]]],
+      ["Day 2 - Upper Body Definition",[["Incline Dumbbell Press","3x12","Controlled reps with shoulders packed."],["Lat Pulldown","3x12","Pull to chest and control the stretch."],["Dumbbell Lateral Raise","4x15","Lead with elbows, no swinging."],["Seated Cable Row","3x12","Pause at the ribs."],["Rope Triceps Pressdown","3x15","Keep elbows locked in place."]]],
+      ["Day 3 - Conditioning Core",[["Kettlebell Swing","5x15","Snap hips and keep back neutral."],["Step-Up","3x12/leg","Drive through the box leg only."],["Mountain Climber","4x30 sec","Fast feet, hips low."],["Dead Bug","3x10/side","Slow and controlled."],["Bike or Row","12 min intervals","Alternate 45 seconds strong with 45 seconds easy."]]],
+      ["Day 4 - Glutes + Back",[["Sumo Deadlift","4x8","Push knees out, chest tall, and drive through the floor."],["Bulgarian Split Squat","3x10/leg","Drop straight down and keep the front foot loaded."],["Single-Arm Row","3x12/side","Pull elbow toward hip."],["Face Pull","3x15","Rear delts and upper back, not traps."],["Cable Kickback","3x15/leg","Squeeze glute without arching lower back."]]],
+      ["Day 5 - Total Body Burn",[["Dumbbell Squat to Press","4x10","Smooth squat, strong press."],["Push-Up","3xAMRAP","Clean reps only."],["Reverse Lunge","3x12/leg","Control the step back."],["Cable Wood Chop","3x12/side","Rotate strong through the trunk."],["Zone 2 Cardio","20 min","Steady pace to finish."]]],
+      ["Day 6 - Mobility + Easy Sweat",[["Brisk Walk","30 min","Consistent pace and relaxed breathing."],["Bodyweight Squat","3x15","Move clean through full range."],["Band Row","3x20","Squeeze shoulder blades."],["Glute Bridge","3x20","Pause every rep."],["Mobility Flow","10 min","Hips, hamstrings, calves, chest."]]],
+    ],
+  };
+  const templates=plans[planKey];
+  return JSON.stringify({workouts:templates.slice(0,days).map(([day,exercises])=>({
+    day:`${day} (${focus} / ${goal})`,
+    exercises:exercises.map(([name,sets,howTo])=>({name,sets,howTo}))
+  }))});
+};
+
+const parseWorkoutPlan=(reply,prompt)=>{
+  const fallback=JSON.parse(buildWorkoutFallback(prompt));
+  const raw=String(reply||"").replace(/```json|```/g,"").trim();
+  if(!raw)return fallback;
+  const jsonText=(raw.match(/\{[\s\S]*\}/)||[])[0]||raw;
+  try{
+    const parsed=JSON.parse(jsonText);
+    if(Array.isArray(parsed?.workouts)&&parsed.workouts.length)return parsed;
+  }catch{}
+  return fallback;
+};
+
+const localAIResponse=({messages=[],system=""})=>{
+  const latest=String([...messages].reverse().find(m=>m.role!=="assistant")?.content||"").toLowerCase();
+  const prompt=String(messages[messages.length-1]?.content||"");
+  if(prompt.includes("\"workouts\"")||prompt.includes("JSON only"))return buildWorkoutFallback(prompt);
+  if(prompt.includes("Client check-in")||latest.includes("check-in")){
+    return "You checked in, so now move with the truth. Lock in one clean meal, drink water, and get a 20-minute walk or workout done today. Do not wait for perfect energy; build momentum and report back tomorrow.";
+  }
+  if(prompt.includes("Short punchy blog post")){
+    const topic=(prompt.match(/about: "([^"]+)"/)||[])[1]||"staying consistent";
+    return `Most people do not need a new plan. They need to stop disappearing when the plan gets uncomfortable. ${topic} comes down to doing the basic work when nobody is clapping.\n\nBodies by Rod is built around that standard: train, eat, check in, adjust, repeat. If your week is messy, you do not quit. You tighten the next meal, the next workout, the next decision.\n\nThat is how the body changes. That is how the business changes too. Stack enough disciplined days and the results stop being a wish. They become evidence.`;
+  }
+  if(system.includes("intake AI")||system.includes("Qualify leads")){
+    if(latest.includes("price")||latest.includes("cost")||latest.includes("money"))return "Real talk: GRIND is $480/month, HUSTLE is $550/month, and EMPIRE is $1,500/month. If you need the cleanest first move, start with the $75 strategy consult and let Rod map the right package. What result are you trying to lock in first?";
+    if(latest.includes("ready")||latest.includes("start")||latest.includes("yes"))return "Good. Start with the $75 strategy consult so Rod can hear the goal, check the timeline, and tell you which package fits. What has stopped you from getting this done already?";
+    return "What are you trying to build first: your body, your fitness business, or both? Give me the goal and the timeline so I can point you to GRIND, HUSTLE, EMPIRE, or the $75 consult.";
+  }
+  if(latest.includes("package")||latest.includes("price")||latest.includes("cost"))return "Packages start with GRIND at $480/month, HUSTLE at $550/month, and EMPIRE at $1,500/month. If you are not sure where to start, book the $75 strategy consult first.";
+  if(latest.includes("phone")||latest.includes("call")||latest.includes("rod")||latest.includes("book")||latest.includes("consult"))return "If you want Rod on the phone, start with the $75 strategy consult. It covers your goal, the right package, and the next move before you commit.";
+  if(latest.includes("meal")||latest.includes("food")||latest.includes("nutrition"))return "For meals, start with the free meal plan or R.O.D. Meals. Pick your goal, choose your diet style, and use the plan as your week-one structure.";
+  if(latest.includes("referral")||latest.includes("refer")||latest.includes("loyalty"))return "Use Refer & Earn and Loyalty to track who you send in and what reward connects to it. Rewards are tied to real committed clients.";
+  if(latest.includes("lifewave")||latest.includes("patch"))return "LifeWave patches are listed as part of the Bodies by Rod wellness stack. Start with your goal first, then ask Rod which patch setup fits training, recovery, energy, or sleep.";
+  return "I can help with Bodies by Rod packages, booking Rod for a phone consult, meal prep, check-ins, referrals, LifeWave patches, and where to start. Tell me your goal and I will point you to the right next step.";
+};
+
 const askAI=async({messages,system,maxTokens=500})=>{
-  const res=await fetch("/.netlify/functions/ai-helper",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages,system,maxTokens})});
-  if(!res.ok)throw new Error("AI helper unavailable");
-  const data=await res.json();
-  return data.text||"";
+  const fallback=localAIResponse({messages,system});
+  try{
+    const res=await fetch(`/.netlify/functions/ai-helper?t=${Date.now()}`,{
+      method:"POST",
+      cache:"no-store",
+      headers:{"Content-Type":"application/json","Cache-Control":"no-cache"},
+      body:JSON.stringify({messages,system,maxTokens})
+    });
+    if(!res.ok)return fallback;
+    const data=await res.json();
+    return data.text||fallback;
+  }catch{
+    return fallback;
+  }
 };
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
@@ -478,7 +579,7 @@ function SiteAIHelper(){
   const [open,setOpen]=useState(false);
   const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false);
-  const [msgs,setMsgs]=useState([{role:"assistant",content:"Ask me about packages, booking, meal prep, check-ins, referrals, or where to start."}]);
+  const [msgs,setMsgs]=useState([{role:"assistant",content:"Ask me about Bodies by Rod packages, booking Rod for a phone consult, meal prep, check-ins, referrals, LifeWave patches, or where to start."}]);
   const ref=useRef(null);
   useEffect(()=>{ref.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading,open]);
   const send=async()=>{
@@ -487,10 +588,10 @@ function SiteAIHelper(){
     const next=[...msgs,userMsg];
     setMsgs(next);setInput("");setLoading(true);
     try{
-      const reply=await askAI({maxTokens:420,system:"You are the helpful website assistant for Bodies by Rod. Answer questions about the website, packages, consults, booking, Stripe checkout, meal prep, check-ins, referrals, and getting started. Be concise, direct, and helpful. Do not promise availability or payment completion. If payment links are asked about, tell the visitor checkout opens through secure Stripe links once configured.",messages:next.slice(-8)});
-      setMsgs([...next,{role:"assistant",content:reply||"I can help with packages, booking, payment steps, and where to start."}]);
+      const reply=await askAI({maxTokens:420,system:"You are the helpful website assistant for Bodies by Rod. Answer questions about the website, packages, phone consults with Rod, booking, Stripe checkout, meal prep, check-ins, referrals, LifeWave patches, and getting started. Be concise, direct, and helpful. Do not promise availability or payment completion. If payment links are asked about, tell the visitor checkout opens through secure Stripe links once configured.",messages:next.slice(-8)});
+      setMsgs([...next,{role:"assistant",content:reply||"I can help with Bodies by Rod packages, booking Rod for a phone consult, payment steps, and where to start."}]);
     }catch{
-      setMsgs([...next,{role:"assistant",content:"I can help, but the AI helper is not connected right now. Try again after the site is deployed with Netlify AI Gateway enabled."}]);
+      setMsgs([...next,{role:"assistant",content:"I can help with Bodies by Rod packages, booking Rod for a phone consult, meal prep, check-ins, referrals, LifeWave patches, and where to start. Ask me what you are trying to accomplish and I will point you to the right next step."}]);
     }
     setLoading(false);
   };
@@ -1147,13 +1248,18 @@ function MessagesPage(){
 function TrainPage(){
   const [goal,setGoal]=useState("Build Muscle"); const [level,setLevel]=useState("Intermediate");
   const [days,setDays]=useState("4"); const [focus,setFocus]=useState("Full Body");
-  const [loading,setLoading]=useState(false); const [plan,setPlan]=useState(null);
+  const [loading,setLoading]=useState(false); const [plan,setPlan]=useState(null); const [generated,setGenerated]=useState(false);
   const generate=async()=>{
-    setLoading(true);setPlan(null);
+    setLoading(true);setPlan(null);setGenerated(false);
+    const prompt=WO_PROMPT(goal,level,days,focus);
     try{
-      const reply=await askAI({maxTokens:1000,messages:[{role:"user",content:WO_PROMPT(goal,level,days,focus)}]});
-      setPlan(JSON.parse((reply||"{}").replace(/```json|```/g,"").trim()));
-    }catch(e){console.error(e);}
+      const reply=await askAI({maxTokens:1000,messages:[{role:"user",content:prompt}]});
+      setPlan(parseWorkoutPlan(reply,prompt));
+    }catch(e){
+      console.error(e);
+      setPlan(parseWorkoutPlan("",prompt));
+    }
+    setGenerated(true);
     setLoading(false);
   };
   return(<div className="sec">
@@ -1172,6 +1278,7 @@ function TrainPage(){
           </div>))}
         </div>
         <button className="btn btn-full" onClick={generate} disabled={loading}>{loading?"Building...":"Generate My Program →"}</button>
+        {generated&&!plan?.workouts&&<div style={{marginTop:14,fontSize:12,color:"var(--mut)",lineHeight:1.7}}>Program is ready to rebuild. Tap generate again and Rod's fallback plan loads even if the AI connection is busy.</div>}
         {plan?.workouts&&<div style={{marginTop:16}}>
           {plan.workouts.map((day,i)=>(<div key={i} style={{marginBottom:18}}>
             <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--red)",marginBottom:9,paddingBottom:6,borderBottom:"1px solid var(--bdr)"}}>{day.day}</div>
