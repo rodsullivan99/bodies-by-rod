@@ -5,6 +5,25 @@ const store = {
   set: async (k, v, shared=false) => { try { await window.storage.set(k, JSON.stringify(v), shared); } catch {} },
 };
 
+const submitNetlifyForm = async (formName, fields) => {
+  const body = new URLSearchParams({ "form-name": formName, ...fields });
+  const response = await fetch("/__forms.html", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: body.toString(),
+  });
+  if (!response.ok) throw new Error(`Netlify form ${formName} failed`);
+};
+
+const captureConversion = async (stage, fields = {}) => {
+  await submitNetlifyForm("client-acquisition-event", {
+    stage,
+    timestamp: new Date().toISOString(),
+    page: window.location.pathname,
+    ...fields,
+  });
+};
+
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Oswald:wght@300;400;500;600;700&family=Barlow:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -532,10 +551,24 @@ function HomePage({setPage,showToast}){
   const [promo,setPromo]=useState("");
   const [promoMsg,setPromoMsg]=useState("");
 
-  const grabMagnet=()=>{
+  const grabMagnet=async()=>{
     if(!email.trim())return;
-    setLmDone(true);
-    showToast("Free 7-Day Meal Plan sent to "+email+"!");
+    try{
+      await submitNetlifyForm("free-meal-plan-quick", {
+        email: email.trim(),
+        source: "Hero Free Meal Plan",
+      });
+      captureConversion("free-meal-plan-quick-optin", {
+        email: email.trim(),
+        source: "Hero Free Meal Plan",
+        status: "new-lead",
+      }).catch(console.error);
+      setLmDone(true);
+      showToast("Free 7-Day Meal Plan sent to "+email+"!");
+    }catch(e){
+      console.error(e);
+      showToast("Email could not be submitted. Try again.");
+    }
   };
   const checkPromo=()=>{
     const msg=VALID_PROMOS[promo.toUpperCase()];
@@ -559,7 +592,7 @@ function HomePage({setPage,showToast}){
               <div style={{fontFamily:"'Oswald',sans-serif",fontSize:13,fontWeight:600,color:"var(--w)",marginBottom:2}}>🎁 Free 7-Day Meal Plan</div>
               <div style={{fontSize:11,color:"var(--mut)",fontWeight:300}}>Rod's exact week-1 nutrition plan. Free. No commitment.</div>
             </div>
-            <input className="lm-inp" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Your email" onKeyDown={e=>e.key==="Enter"&&grabMagnet()}/>
+            <input className="lm-inp" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Your email" type="email" onKeyDown={e=>e.key==="Enter"&&grabMagnet()}/>
             <button className="lm-btn" onClick={grabMagnet}>Get It Free</button>
           </div>
         ):(
@@ -649,18 +682,31 @@ function ConsultPage({setPage,showToast}){
   const [step,setStep]=useState(1); // 1=info, 2=payment
   const [done,setDone]=useState(false);
 
-  const proceed=()=>{
+  const proceed=async()=>{
     if(!name.trim()||!email.trim())return;
+    captureConversion("consult-intake-submitted", {
+      name: name.trim(),
+      email: email.trim(),
+      package: pkg,
+      goal: goal.trim(),
+      value: "75",
+      status: "payment-pending",
+    }).catch(console.error);
     setStep(2);
   };
 
-  const handleStripe=()=>{
+  const handleStripe=async()=>{
     // Save consult info first
-    store.get("bbr_consults",true).then(c=>{
-      const list=c||[];
-      list.push({id:Date.now(),name,email,pkg,goal,date:new Date().toLocaleDateString(),status:"Pending"});
-      store.set("bbr_consults",list,true);
-    });
+    const list=await store.get("bbr_consults",true)||[];
+    list.push({id:Date.now(),name,email,pkg,goal,date:new Date().toLocaleDateString(),status:"Pending"});
+    await store.set("bbr_consults",list,true);
+    captureConversion("consult-checkout-started", {
+      name: name.trim(),
+      email: email.trim(),
+      package: pkg,
+      goal: goal.trim(),
+      value: "75",
+    }).catch(console.error);
     // Open Stripe checkout
     window.open(STRIPE_CONSULT,"_blank");
     setDone(true);
@@ -812,6 +858,12 @@ function PackagesPage({setPage,showToast}){
           ))}</ul>
           <button className={`btn btn-full ${p.feat?"":"btn-ol"}`} onClick={()=>{
             const link=mode==="split"?p.stripeSplitLink:p.stripeLink;
+            captureConversion("package-checkout-click", {
+              package: p.name,
+              payment_mode: mode,
+              value: String(mode==="split"?p.split:p.price),
+              monthly_value: String(p.price),
+            }).catch(console.error);
             window.open(link,"_blank");
             showToast("Redirecting to secure Stripe checkout...");
           }}>
@@ -912,6 +964,12 @@ function CheckInPage({showToast}){
       const h=await store.get("bbr_checkins")||[];
       h.unshift({date:new Date().toLocaleDateString(),mood,energy,wins,blocks,response:reply});
       await store.set("bbr_checkins",h.slice(0,30));
+      captureConversion("daily-checkin-submitted", {
+        mood: String(mood),
+        energy: String(energy),
+        wins: wins.trim(),
+        blocks: blocks.trim(),
+      }).catch(console.error);
       setHistory(h.slice(0,30));
       setDone(true);showToast("Check-in submitted!");
     }catch(error){console.error(error);setResponse(AI_OFFLINE_MSG);}
@@ -1151,7 +1209,7 @@ function MessagesPage(){
 // ─── TRAIN ────────────────────────────────────────────────────────────────────
 function TrainPage(){
   const [goal,setGoal]=useState("Build Muscle"); const [level,setLevel]=useState("Intermediate");
-  const [days,setDays]=useState("4"); const [focus,setFocus]=useState("Full Body");
+  const [days,setDays]=useState("2"); const [focus,setFocus]=useState("Full Body");
   const [loading,setLoading]=useState(false); const [plan,setPlan]=useState(null); const [error,setError]=useState("");
   const generate=async()=>{
     setLoading(true);setPlan(null);setError("");
@@ -1172,7 +1230,7 @@ function TrainPage(){
         <div className="g2" style={{marginBottom:13}}>
           {[["Goal",goal,setGoal,["Build Muscle","Lose Weight","Athletic Performance","Tone & Define","Increase Strength"]],
             ["Level",level,setLevel,["Beginner","Intermediate","Advanced"]],
-            ["Days/Week",days,setDays,["3","4","5","6"]],
+            ["Days/Week",days,setDays,["2","3","4","5","6"]],
             ["Focus",focus,setFocus,["Full Body","Upper / Lower","Push / Pull / Legs","Cardio + Strength"]]
           ].map(([l,v,s,o])=>(<div key={l}><div className="lbl">{l}</div>
             <select className="sel" value={v} onChange={e=>s(e.target.value)}>{o.map(x=><option key={x}>{x}</option>)}</select>
@@ -1198,23 +1256,31 @@ function TrainPage(){
 // ─── MEALS ────────────────────────────────────────────────────────────────────
 function MealsPage({showToast}){
   const [tab,setTab]=useState("menu"); const [cart,setCart]=useState({});
-  const [custom,setCustom]=useState(""); const [cname,setCname]=useState("");
+  const [custom,setCustom]=useState(""); const [cname,setCname]=useState(""); const [cemail,setCemail]=useState("");
   const [done,setDone]=useState(false);
   const total=Object.values(cart).reduce((a,b)=>a+b,0);
   const MIN=10;
   const add=(n)=>setCart(c=>({...c,[n]:(c[n]||0)+1}));
   const remove=(n)=>setCart(c=>{const x={...c};if(x[n]>1)x[n]--;else delete x[n];return x;});
   const place=async()=>{
-    if((total<MIN&&!custom.trim())||!cname.trim())return;
+    if((total<MIN&&!custom.trim())||!cname.trim()||!cemail.trim())return;
     const orders=await store.get("bbr_orders",true)||[];
-    orders.push({id:Date.now(),client:cname,items:cart,custom,total,date:new Date().toLocaleDateString(),monthly:true});
+    orders.push({id:Date.now(),client:cname,email:cemail,items:cart,custom,total,date:new Date().toLocaleDateString(),monthly:true});
     await store.set("bbr_orders",orders,true);
+    captureConversion("meal-order-submitted", {
+      name: cname.trim(),
+      email: cemail.trim(),
+      meals_total: String(total),
+      items: JSON.stringify(cart),
+      custom_order: custom.trim(),
+      monthly: "true",
+    }).catch(console.error);
     setDone(true);showToast("Meal order placed!");
   };
   if(done)return(<div className="sec"><div className="card"><div className="card-body" style={{textAlign:"center",padding:"28px"}}>
     <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:24,color:"var(--red)",marginBottom:7}}>ORDER LOCKED IN ✓</div>
     <div style={{fontSize:12,color:"var(--mut)",lineHeight:1.8,marginBottom:16}}>Rod confirms within 24 hours. Monthly auto-renewal active.</div>
-    <button className="btn" onClick={()=>{setDone(false);setCart({});setCustom("");setCname("");}}>New Order</button>
+    <button className="btn" onClick={()=>{setDone(false);setCart({});setCustom("");setCname("");setCemail("");}}>New Order</button>
   </div></div></div>);
   return(<div className="sec">
     <div className="stag">R.O.D. Meals — Ready On Demand</div><h2 className="sh2">EAT WITH PURPOSE.</h2>
@@ -1250,6 +1316,7 @@ function MealsPage({showToast}){
           <textarea className="ta" value={custom} onChange={e=>setCustom(e.target.value)} placeholder="5 chicken dinners, 5 egg white breakfasts, no dairy..."/></>}
         {tab==="summary"&&<>
           <div style={{marginBottom:11}}><div className="lbl">Your Name</div><input className="inp" value={cname} onChange={e=>setCname(e.target.value)} placeholder="First name"/></div>
+          <div style={{marginBottom:11}}><div className="lbl">Email *</div><input className="inp" value={cemail} onChange={e=>setCemail(e.target.value)} placeholder="your@email.com" type="email"/></div>
           <div style={{background:"var(--g2)",border:"1px solid var(--bdr)",borderRadius:2,padding:13,marginBottom:11}}>
             {Object.entries(cart).length>0?Object.entries(cart).map(([n,q])=>(
               <div key={n} style={{display:"flex",justifyContent:"space-between",fontSize:11,padding:"4px 0"}}>
@@ -1262,7 +1329,7 @@ function MealsPage({showToast}){
               <span style={{fontFamily:"'Oswald',sans-serif",fontSize:15,color:"var(--red)",fontWeight:700}}>{total} meals</span>
             </div>
           </div>
-          <button className="btn btn-full" onClick={place} disabled={(total<MIN&&!custom.trim())||!cname.trim()}>
+          <button className="btn btn-full" onClick={place} disabled={(total<MIN&&!custom.trim())||!cname.trim()||!cemail.trim()}>
             {total>=MIN||custom.trim()?"Place Monthly Order →":`Add ${Math.max(0,MIN-total)} More Meals`}
           </button>
         </>}
@@ -1278,7 +1345,7 @@ function BookPage({showToast}){
   const [selDay,setSelDay]=useState(null); const [selTime,setSelTime]=useState(null);
   const [bookings,setBookings]=useState({}); const [waitlist,setWaitlist]=useState([]);
   const [name,setName]=useState(""); const [email,setEmail]=useState(""); const [goal,setGoal]=useState("");
-  const [success,setSuccess]=useState(null); const [wlName,setWlName]=useState(""); const [wlDone,setWlDone]=useState(false);
+  const [success,setSuccess]=useState(null); const [wlName,setWlName]=useState(""); const [wlEmail,setWlEmail]=useState(""); const [wlDone,setWlDone]=useState(false);
   const [loading,setLoading]=useState(true);
   useEffect(()=>{Promise.all([store.get("bbr_bookings",true),store.get("bbr_waitlist",true)]).then(([b,w])=>{setBookings(b||{});setWaitlist(w||[]);setLoading(false);});},[]);
   const prevMo=()=>{if(mo===0){setYr(y=>y-1);setMo(11);}else setMo(m=>m-1);setSelDay(null);setSelTime(null);};
@@ -1289,16 +1356,27 @@ function BookPage({showToast}){
   const isFull=(d)=>bookings[dk(d)]?.length>=TIMES.length;
   const dim=new Date(yr,mo+1,0).getDate(); const fd=new Date(yr,mo,1).getDay();
   const book=async()=>{
-    if(!selDay||!selTime||!name.trim())return;
+    if(!selDay||!selTime||!name.trim()||!email.trim())return;
     const key=dk(selDay);
     const updated={...bookings,[key]:[...(bookings[key]||[]),selTime]};
     await store.set("bbr_bookings",updated,true);
+    captureConversion("session-booked", {
+      name: name.trim(),
+      email: email.trim(),
+      goal: goal.trim(),
+      date: key,
+      time: selTime,
+    }).catch(console.error);
     setBookings(updated);setSuccess({day:selDay,time:selTime});showToast("Session booked!");
   };
   const joinWl=async()=>{
-    if(!wlName.trim())return;
-    const updated=[...waitlist,{name:wlName,date:new Date().toLocaleDateString()}];
+    if(!wlName.trim()||!wlEmail.trim())return;
+    const updated=[...waitlist,{name:wlName,email:wlEmail,date:new Date().toLocaleDateString()}];
     await store.set("bbr_waitlist",updated,true);
+    captureConversion("waitlist-joined", {
+      name: wlName.trim(),
+      email: wlEmail.trim(),
+    }).catch(console.error);
     setWaitlist(updated);setWlDone(true);showToast("Added to waitlist!");
   };
   if(loading)return <div className="sec" style={{textAlign:"center",color:"var(--mut)",paddingTop:80}}>LOADING...</div>;
@@ -1332,9 +1410,9 @@ function BookPage({showToast}){
         {selDay&&selTime&&<div style={{display:"grid",gap:10}}>
           <div style={{background:"rgba(232,25,44,0.07)",border:"1px solid rgba(232,25,44,0.2)",borderRadius:2,padding:"8px 12px",fontFamily:"'Oswald',sans-serif",fontSize:11,color:"var(--red)",letterSpacing:1}}>{MONTHS[mo]} {selDay}, {yr} · {selTime}</div>
           <div><div className="lbl">Name *</div><input className="inp" value={name} onChange={e=>setName(e.target.value)} placeholder="Full name"/></div>
-          <div><div className="lbl">Email</div><input className="inp" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com"/></div>
+          <div><div className="lbl">Email *</div><input className="inp" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com"/></div>
           <div><div className="lbl">Goal</div><input className="inp" value={goal} onChange={e=>setGoal(e.target.value)} placeholder="What to work on?"/></div>
-          <button className="btn btn-full" onClick={book} disabled={!name.trim()}>Confirm Booking →</button>
+          <button className="btn btn-full" onClick={book} disabled={!name.trim()||!email.trim()}>Confirm Booking →</button>
         </div>}
       </div>
     </div>
@@ -1345,7 +1423,8 @@ function BookPage({showToast}){
         :<><div style={{fontSize:11,color:"var(--mut)",marginBottom:11,lineHeight:1.7,fontWeight:300}}>Fully booked? Join the waitlist. First to know when something opens.</div>
           <div style={{display:"flex",gap:9,flexWrap:"wrap"}}>
             <input className="inp" style={{flex:1}} value={wlName} onChange={e=>setWlName(e.target.value)} placeholder="Your name"/>
-            <button className="btn btn-gold" style={{flexShrink:0}} onClick={joinWl} disabled={!wlName.trim()}>Join Waitlist</button>
+            <input className="inp" style={{flex:1}} value={wlEmail} onChange={e=>setWlEmail(e.target.value)} placeholder="your@email.com" type="email"/>
+            <button className="btn btn-gold" style={{flexShrink:0}} onClick={joinWl} disabled={!wlName.trim()||!wlEmail.trim()}>Join Waitlist</button>
           </div></>}
       </div>
     </div>
@@ -1477,7 +1556,15 @@ function LoyaltyPage({setPage}){
             </div>
           ))}
         </div>
-        <button className="btn btn-full btn-gold" disabled={!rewardMode||!rname.trim()} onClick={()=>alert(`✅ ${rewardMode} of $${base-discounted} submitted for ${rname}! Rod confirms within 24 hours.`)}>Submit Claim →</button>
+        <button className="btn btn-full btn-gold" disabled={!rewardMode||!rname.trim()} onClick={async()=>{
+          captureConversion("loyalty-reward-claimed", {
+            name: rname.trim(),
+            reward_mode: rewardMode,
+            monthly_savings: String(base-discounted),
+            discount_percent: String(disc),
+          }).catch(console.error);
+          alert(`✅ ${rewardMode} of $${base-discounted} submitted for ${rname}! Rod confirms within 24 hours.`);
+        }}>Submit Claim →</button>
       </div>
     </div>}
   </div>);
@@ -1584,6 +1671,11 @@ function ReferralPage({showToast}){
       {name:"Tasha R.",pkg:"Pending",status:"Qualified",earned:"Pending",date:"May 14"},
     ]};
     await store.set("bbr_referral",data);
+    captureConversion("referral-link-created", {
+      name: name.trim(),
+      referral_code: code,
+      referral_link: link,
+    }).catch(console.error);
     setRefLink(link);setRefs(data.refs);showToast("Referral link created!");
   };
   const copy=()=>{navigator.clipboard?.writeText(refLink);setCopied(true);setTimeout(()=>setCopied(false),2000);};
@@ -1653,6 +1745,12 @@ function TestimonialCollector({showToast}){
     const reviews=await store.get("bbr_reviews",true)||[];
     reviews.push({id:Date.now(),rating,text,name,pkg,date:new Date().toLocaleDateString(),status:"Pending"});
     await store.set("bbr_reviews",reviews,true);
+    captureConversion("review-submitted", {
+      name: name.trim(),
+      package: pkg,
+      rating: String(rating),
+      testimonial: text.trim(),
+    }).catch(console.error);
     setDone(true);showToast("Review submitted! Thank you.");
   };
   if(done)return(<div style={{textAlign:"center",padding:"24px 0"}}>
@@ -2054,7 +2152,7 @@ function AdminPage({showToast}){
 
 // ─── QUALIFY ──────────────────────────────────────────────────────────────────
 function QualifyPage({setPage}){
-  const [started,setStarted]=useState(false); const [name,setName]=useState("");
+  const [started,setStarted]=useState(false); const [name,setName]=useState(""); const [email,setEmail]=useState("");
   const [healthStep,setHealthStep]=useState(false);
   const [health,setHealth]=useState({
     recentSurgery:"",
@@ -2074,15 +2172,27 @@ function QualifyPage({setPage}){
   const healthReady=health.recentSurgery&&health.doctorCleared&&health.injuries.trim()&&health.medicalConditions.trim()&&health.medications.trim()&&health.symptoms&&health.limitations.trim()&&health.emergencyContact.trim();
   const healthSummary=()=>`Health screening for ${name}: recent surgery=${health.recentSurgery}; doctor cleared=${health.doctorCleared}; injuries/pain=${health.injuries}; medical conditions=${health.medicalConditions}; medications=${health.medications}; chest pain/dizziness/fainting during activity=${health.symptoms}; movement limits=${health.limitations}; emergency contact provided=${health.emergencyContact ? "yes" : "no"}.`;
   const check=(text)=>{
-    if(text.includes("[QUALIFIED]"))setTimeout(()=>setStatus("qualified"),800);
-    else if(text.includes("[NOT_QUALIFIED]"))setTimeout(()=>setStatus("nq"),800);
+    if(text.includes("[QUALIFIED]")){
+      captureConversion("lead-qualified", { name: name.trim(), email: email.trim(), status: "qualified" }).catch(console.error);
+      setTimeout(()=>setStatus("qualified"),800);
+    }
+    else if(text.includes("[NOT_QUALIFIED]")){
+      captureConversion("lead-not-qualified", { name: name.trim(), email: email.trim(), status: "not-qualified" }).catch(console.error);
+      setTimeout(()=>setStatus("nq"),800);
+    }
   };
   const updateHealth=(key,value)=>setHealth(h=>({...h,[key]:value}));
   const start=async()=>{
-    if(!name.trim()||!healthReady||needsClearance)return;
+    if(!name.trim()||!email.trim()||!healthReady||needsClearance)return;
     setStarted(true);setLoading(true);
     const openMsg={role:"user",content:`My name is ${name}. I was referred to Bodies by Rod. ${healthSummary()}`};
     try{
+      captureConversion("qualification-intake-started", {
+        name: name.trim(),
+        email: email.trim(),
+        medical_clearance_required: needsClearance ? "yes" : "no",
+        health_screen_complete: "yes",
+      }).catch(console.error);
       const reply=(await askAI({maxTokens:1000,system:Q_PROMPT,messages:[openMsg]}))||"What are you trying to build?";
       setMsgs([openMsg,{role:"assistant",content:reply}]);check(reply);setCount(1);
     }catch(error){console.error(error);setMsgs([openMsg,{role:"assistant",content:AI_OFFLINE_MSG}]);}
@@ -2117,8 +2227,9 @@ function QualifyPage({setPage}){
         <div style={{padding:"24px 17px",textAlign:"center"}}>
           <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:22,color:"var(--w)",marginBottom:5}}>YOU WERE REFERRED.</div>
           <div style={{fontSize:12,color:"var(--mut)",marginBottom:20,lineHeight:1.7,fontWeight:300}}>5 minutes. Be real. Let's see if you qualify.</div>
-          <input className="inp" style={{textAlign:"center",marginBottom:9}} value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&name.trim()&&setHealthStep(true)} placeholder="Enter your first name"/>
-          <button className="btn btn-full" onClick={()=>setHealthStep(true)} disabled={!name.trim()}>Continue to Safety Check →</button>
+          <input className="inp" style={{textAlign:"center",marginBottom:9}} value={name} onChange={e=>setName(e.target.value)} placeholder="Enter your first name"/>
+          <input className="inp" style={{textAlign:"center",marginBottom:9}} value={email} onChange={e=>setEmail(e.target.value)} onKeyDown={e=>e.key==="Enter"&&name.trim()&&email.trim()&&setHealthStep(true)} placeholder="Enter your email" type="email"/>
+          <button className="btn btn-full" onClick={()=>setHealthStep(true)} disabled={!name.trim()||!email.trim()}>Continue to Safety Check →</button>
         </div>
       ):healthStep&&!started?(
         <div style={{padding:"18px 17px"}}>
@@ -2158,7 +2269,7 @@ function QualifyPage({setPage}){
           </div>
           <div style={{display:"flex",gap:8,marginTop:14}}>
             <button className="btn btn-ol btn-sm" onClick={()=>setHealthStep(false)}>← Back</button>
-            <button className="btn" style={{flex:1}} onClick={start} disabled={!healthReady||needsClearance||loading}>Start My Intake →</button>
+            <button className="btn" style={{flex:1}} onClick={start} disabled={!email.trim()||!healthReady||needsClearance||loading}>Start My Intake →</button>
           </div>
         </div>
       ):(
@@ -2389,6 +2500,11 @@ function ReferralPageV2({showToast}){
     ];
     const data={name,link,code,refs:demoRefs};
     await store.set("bbr_referral",data);
+    captureConversion("referral-link-created", {
+      name: name.trim(),
+      referral_code: code,
+      referral_link: link,
+    }).catch(console.error);
     setRefLink(link);setRefs(demoRefs);
     showToast("Referral link created!");
   };
@@ -2568,6 +2684,8 @@ function SessionsPage({setPage,showToast}){
   const [sessionType,setSessionType]=useState("online");
   const [platform,setPlatform]=useState("FaceTime");
   const [frequency,setFrequency]=useState("2x");
+  const [name,setName]=useState("");
+  const [email,setEmail]=useState("");
   const [step,setStep]=useState(1);
 
   const sessions={
@@ -2608,9 +2726,11 @@ function SessionsPage({setPage,showToast}){
   const monthlyTotal=current.price*freqData.sessions;
 
   const handleBook=async()=>{
-    if(!platform)return;
+    if(!platform||!name.trim()||!email.trim())return;
     const booking={
       id:Date.now(),
+      name,
+      email,
       type:sessionType,
       platform,
       frequency,
@@ -2622,6 +2742,15 @@ function SessionsPage({setPage,showToast}){
     const bookings=await store.get("bbr_bookings",true)||[];
     bookings.push(booking);
     await store.set("bbr_bookings",bookings,true);
+    captureConversion("session-package-selected", {
+      name: name.trim(),
+      email: email.trim(),
+      session_type: current.name,
+      platform,
+      frequency,
+      sessions_per_month: String(freqData.sessions),
+      monthly_value: String(monthlyTotal),
+    }).catch(console.error);
     showToast("Session package ready for checkout!");
     setStep(3);
   };
@@ -2710,7 +2839,12 @@ function SessionsPage({setPage,showToast}){
             </div>
           </div>
 
-          <button className="btn btn-full" onClick={handleBook} style={{background:current.color}} disabled={!platform}>
+          <div style={{display:"grid",gap:10,marginBottom:16}}>
+            <div><div className="lbl">Full Name *</div><input className="inp" value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/></div>
+            <div><div className="lbl">Email *</div><input className="inp" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com" type="email"/></div>
+          </div>
+
+          <button className="btn btn-full" onClick={handleBook} style={{background:current.color}} disabled={!platform||!name.trim()||!email.trim()}>
             Continue to Checkout →
           </button>
           <button className="btn btn-ol btn btn-sm" onClick={()=>setStep(1)}>← Back</button>
@@ -2728,7 +2862,18 @@ function SessionsPage({setPage,showToast}){
           <strong style={{color:current.color}}>${monthlyTotal}/month</strong><br/>
           <span style={{fontSize:10,marginTop:6,display:"block"}}>You will be redirected to Stripe to complete payment</span>
         </div>
-        <button className="btn btn-full" onClick={()=>{window.open("https://buy.stripe.com/YOUR_SESSION_LINK","_blank");showToast("Opening secure checkout...");}} style={{background:current.color,marginBottom:8}}>
+        <button className="btn btn-full" onClick={()=>{
+          captureConversion("session-package-checkout-click", {
+            name: name.trim(),
+            email: email.trim(),
+            session_type: current.name,
+            platform,
+            frequency,
+            sessions_per_month: String(freqData.sessions),
+            monthly_value: String(monthlyTotal),
+          }).catch(console.error);
+          window.open("https://buy.stripe.com/YOUR_SESSION_LINK","_blank");showToast("Opening secure checkout...");
+        }} style={{background:current.color,marginBottom:8}}>
           🔒 Pay ${monthlyTotal}/month with Stripe
         </button>
         <button className="btn btn-ol btn btn-sm" onClick={()=>setStep(2)}>← Change Details</button>
@@ -2784,6 +2929,27 @@ function MealPlanGeneratorPage({showToast}){
     const leads=await store.get("bbr_leads",true)||[];
     leads.push(lead);
     await store.set("bbr_leads",leads,true);
+
+    try{
+      await submitNetlifyForm("free-meal-plan-generator", {
+        name: name.trim(),
+        email: email.trim(),
+        goal: goals[goal].label,
+        diet: diets[diet].label,
+        source: "Free Meal Plan Generator",
+      });
+      captureConversion("free-meal-plan-generator-optin", {
+        name: name.trim(),
+        email: email.trim(),
+        goal: goals[goal].label,
+        source: "Free Meal Plan Generator",
+        status: "new-lead",
+      }).catch(console.error);
+    }catch(e){
+      console.error(e);
+      showToast("Email could not be submitted. Try again.");
+      return;
+    }
 
     generatePlanHTML(goal,diet,name);
     setGenerated(true);
