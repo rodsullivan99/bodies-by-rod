@@ -273,6 +273,16 @@ input,textarea,select{-webkit-appearance:none;}
 
 /* PROMO */
 .promo-active{background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.2);border-radius:3px;padding:10px 14px;font-family:'Oswald',sans-serif;font-size:12px;color:var(--green);letter-spacing:1px;}
+
+/* SITE AI HELPER */
+.ai-help{position:fixed;right:16px;bottom:16px;z-index:600;width:min(360px,calc(100vw - 32px));}
+.ai-toggle{margin-left:auto;display:flex;align-items:center;gap:9px;background:var(--red);border:none;border-radius:3px;padding:12px 15px;color:#fff;font-family:'Oswald',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;cursor:pointer;box-shadow:0 12px 34px rgba(0,0,0,0.55);}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:#fff;animation:pulse 1.4s infinite;}
+.ai-panel{margin-bottom:10px;background:rgba(20,20,20,0.98);border:1px solid rgba(232,25,44,0.28);border-radius:4px;overflow:hidden;box-shadow:0 18px 48px rgba(0,0,0,0.65);}
+.ai-panel-h{padding:12px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;background:rgba(232,25,44,0.06);}
+.ai-close{background:none;border:1px solid var(--bdr);color:var(--mut);width:24px;height:24px;border-radius:2px;cursor:pointer;}
+.ai-close:hover{color:var(--w);border-color:var(--red);}
+.ai-panel .ch-msgs{height:250px;}
 `;
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -396,6 +406,13 @@ const WO_PROMPT=(g,l,d,f)=>`Bodies by Rod trainer. ${d}-day plan. Goal:${g} Leve
 const BLOG_PROMPT=(t)=>`Short punchy blog post for Bodies by Rod about: "${t}". 3 short paragraphs. Street energy, direct, no fluff. No headers or markdown.`;
 const CHECKIN_PROMPT=(mood,energy,wins,blocks)=>`You're Rod, elite fitness coach. Client check-in: Mood ${mood}/5, Energy ${energy}/5, Wins: "${wins||"none yet"}", Blocking: "${blocks||"nothing"}". Give a direct, real 3-sentence response. Push them forward. No fluff, no corporate speak.`;
 
+const askAI=async({messages,system,maxTokens=500})=>{
+  const res=await fetch("/.netlify/functions/ai-helper",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages,system,maxTokens})});
+  if(!res.ok)throw new Error("AI helper unavailable");
+  const data=await res.json();
+  return data.text||"";
+};
+
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App(){
   const [page,setPage]=useState("home");
@@ -453,7 +470,54 @@ export default function App(){
       {page==="admin"&&<AdminPage showToast={showToast}/>}
       {page==="qualify"&&<QualifyPage/>}
     </div>
+    <SiteAIHelper/>
   </>);
+}
+
+function SiteAIHelper(){
+  const [open,setOpen]=useState(false);
+  const [input,setInput]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [msgs,setMsgs]=useState([{role:"assistant",content:"Ask me about packages, booking, meal prep, check-ins, referrals, or where to start."}]);
+  const ref=useRef(null);
+  useEffect(()=>{ref.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading,open]);
+  const send=async()=>{
+    if(!input.trim()||loading)return;
+    const userMsg={role:"user",content:input};
+    const next=[...msgs,userMsg];
+    setMsgs(next);setInput("");setLoading(true);
+    try{
+      const reply=await askAI({maxTokens:420,system:"You are the helpful website assistant for Bodies by Rod. Answer questions about the website, packages, consults, booking, Stripe checkout, meal prep, check-ins, referrals, and getting started. Be concise, direct, and helpful. Do not promise availability or payment completion. If payment links are asked about, tell the visitor checkout opens through secure Stripe links once configured.",messages:next.slice(-8)});
+      setMsgs([...next,{role:"assistant",content:reply||"I can help with packages, booking, payment steps, and where to start."}]);
+    }catch{
+      setMsgs([...next,{role:"assistant",content:"I can help, but the AI helper is not connected right now. Try again after the site is deployed with Netlify AI Gateway enabled."}]);
+    }
+    setLoading(false);
+  };
+  return(<div className="ai-help">
+    {open&&<div className="ai-panel">
+      <div className="ai-panel-h">
+        <div>
+          <div className="card-title">Bodies by Rod AI Helper</div>
+          <div style={{fontSize:10,color:"var(--mut)",marginTop:3}}>Quick answers while you browse</div>
+        </div>
+        <button className="ai-close" onClick={()=>setOpen(false)}>x</button>
+      </div>
+      <div className="ch-msgs">
+        {msgs.map((m,i)=><div key={i} className={`cmsg ${m.role==="user"?"u":""}`}>
+          <div className={`cav ${m.role==="user"?"ua":""}`}>{m.role==="user"?"Y":"B"}</div>
+          <div className={`cbub ${m.role==="user"?"ub":"ai"}`}>{m.content}</div>
+        </div>)}
+        {loading&&<div className="cmsg"><div className="cav">B</div><div className="typing"><span className="td"/><span className="td"/><span className="td"/></div></div>}
+        <div ref={ref}/>
+      </div>
+      <div className="ch-inp-row">
+        <input className="ch-inp" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")send();}} placeholder="Ask a question..."/>
+        <button className="ch-send" onClick={send} disabled={loading||!input.trim()}>Send</button>
+      </div>
+    </div>}
+    <button className="ai-toggle" onClick={()=>setOpen(v=>!v)}><span className="ai-dot"/>AI Helper</button>
+  </div>);
 }
 
 // ─── HOME ─────────────────────────────────────────────────────────────────────
@@ -838,10 +902,7 @@ function CheckInPage({showToast}){
     if(!mood||!energy)return;
     setLoading(true);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:250,messages:[{role:"user",content:CHECKIN_PROMPT(mood,energy,wins,blocks)}]})});
-      const data=await res.json();
-      const reply=data.content?.[0]?.text||"Keep pushing. You're closer than you think.";
+      const reply=(await askAI({maxTokens:250,messages:[{role:"user",content:CHECKIN_PROMPT(mood,energy,wins,blocks)}]}))||"Keep pushing. You're closer than you think.";
       setResponse(reply);
       const h=await store.get("bbr_checkins")||[];
       h.unshift({date:new Date().toLocaleDateString(),mood,energy,wins,blocks,response:reply});
@@ -1090,10 +1151,8 @@ function TrainPage(){
   const generate=async()=>{
     setLoading(true);setPlan(null);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,messages:[{role:"user",content:WO_PROMPT(goal,level,days,focus)}]})});
-      const data=await res.json();
-      setPlan(JSON.parse((data.content?.[0]?.text||"{}").replace(/```json|```/g,"").trim()));
+      const reply=await askAI({maxTokens:1000,messages:[{role:"user",content:WO_PROMPT(goal,level,days,focus)}]});
+      setPlan(JSON.parse((reply||"{}").replace(/```json|```/g,"").trim()));
     }catch(e){console.error(e);}
     setLoading(false);
   };
@@ -1320,10 +1379,7 @@ function BlogPage(){
   const open=async(post)=>{
     setActive(post);setLoading(true);setContent("");
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:700,messages:[{role:"user",content:BLOG_PROMPT(post.title)}]})});
-      const data=await res.json();
-      setContent(data.content?.[0]?.text||"");
+      setContent(await askAI({maxTokens:700,messages:[{role:"user",content:BLOG_PROMPT(post.title)}]}));
     }catch{setContent("Loading error.");}
     setLoading(false);
   };
@@ -1506,6 +1562,7 @@ function ProgressPage({showToast}){
 }
 
 // ─── REFERRAL ─────────────────────────────────────────────────────────────────
+// eslint-disable-next-line no-unused-vars
 function ReferralPage({showToast}){
   const [name,setName]=useState(""); const [refLink,setRefLink]=useState(""); const [refs,setRefs]=useState([]);
   const [copied,setCopied]=useState(false);
@@ -1621,7 +1678,6 @@ function TestimonialCollector({showToast}){
 function PortalPage({setPage}){
   const [tab,setTab]=useState("overview");
   const [auth,setAuth]=useState(false); const [loginName,setLoginName]=useState("");
-  const [showTestimonial,setShowTestimonial]=useState(false);
   const [monthsActive]=useState(3);
   const [toastMsg,setToastMsg]=useState(null);
   const showToast=(msg)=>{setToastMsg(msg);setTimeout(()=>setToastMsg(null),4000);};
@@ -1771,7 +1827,6 @@ function AdminPage({showToast}){
   const [consults,setConsults]=useState([]);
   const [waitlist,setWaitlist]=useState([]);
   const [reviews,setReviews]=useState([]);
-  const [promoActive,setPromoActive]=useState(false);
   const [promoCode,setPromoCode]=useState(""); const [promoDesc,setPromoDesc]=useState("");
 
   useEffect(()=>{if(auth){
@@ -2005,10 +2060,7 @@ function QualifyPage(){
     setStarted(true);setLoading(true);
     const openMsg={role:"user",content:`My name is ${name}. I was referred to Bodies by Rod.`};
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:Q_PROMPT,messages:[openMsg]})});
-      const data=await res.json();
-      const reply=data.content?.[0]?.text||"What are you trying to build?";
+      const reply=(await askAI({maxTokens:1000,system:Q_PROMPT,messages:[openMsg]}))||"What are you trying to build?";
       setMsgs([openMsg,{role:"assistant",content:reply}]);check(reply);setCount(1);
     }catch{setMsgs([{role:"assistant",content:"What are you trying to build?"}]);}
     setLoading(false);
@@ -2019,10 +2071,7 @@ function QualifyPage(){
     const newMsgs=[...msgs,userMsg];
     setMsgs(newMsgs);setInput("");setLoading(true);setCount(c=>c+1);
     try{
-      const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,system:Q_PROMPT,messages:newMsgs})});
-      const data=await res.json();
-      const reply=data.content?.[0]?.text||"";
+      const reply=await askAI({maxTokens:1000,system:Q_PROMPT,messages:newMsgs});
       setMsgs([...newMsgs,{role:"assistant",content:reply.replace(/\[QUALIFIED\]|\[NOT_QUALIFIED\]/g,"").trim()}]);
       check(reply);
     }catch{setMsgs([...newMsgs,{role:"assistant",content:"Say that again."}]);}
@@ -2062,7 +2111,7 @@ function QualifyPage(){
           {status==="qualified"&&(<div style={{margin:"9px 13px 13px",background:"rgba(232,25,44,0.06)",border:"1px solid rgba(232,25,44,0.22)",borderRadius:3,padding:"16px",textAlign:"center",animation:"up 0.4s ease"}}>
             <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:20,color:"var(--red)",marginBottom:5}}>✓ YOU QUALIFIED</div>
             <div style={{fontSize:11,color:"var(--mut)",marginBottom:12,lineHeight:1.65}}>Start with the $75 strategy call — credited when you join. One call changes everything.</div>
-            <a href="#" className="btn" style={{display:"inline-block",textDecoration:"none",fontSize:11}}>Book $75 Consult →</a>
+            <button className="btn" style={{display:"inline-block",textDecoration:"none",fontSize:11}} onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>Book $75 Consult →</button>
             <div style={{fontSize:10,color:"var(--mut)",marginTop:7}}>Fully credited toward your package when you join.</div>
           </div>)}
           {status==="nq"&&(<div style={{margin:"9px 13px 13px",background:"rgba(255,255,255,0.02)",border:"1px solid var(--bdr)",borderRadius:3,padding:"12px",textAlign:"center"}}>
@@ -2262,8 +2311,6 @@ function ReferralPageV2({showToast}){
   const [refLink,setRefLink]=useState("");
   const [refs,setRefs]=useState([]);
   const [copied,setCopied]=useState(false);
-  const [pendingPay,setPendingPay]=useState(0);
-  const [tab,setTab]=useState("overview");
 
   useEffect(()=>{store.get("bbr_referral").then(d=>{if(d){setName(d.name);setRefLink(d.link);setRefs(d.refs||[]);}});},[]);
 
@@ -2457,7 +2504,6 @@ function SessionsPage({setPage,showToast}){
   const [sessionType,setSessionType]=useState("online");
   const [platform,setPlatform]=useState("FaceTime");
   const [frequency,setFrequency]=useState("1x");
-  const [selectedDates,setSelectedDates]=useState([]);
   const [step,setStep]=useState(1);
 
   const sessions={
@@ -2676,9 +2722,7 @@ function MealPlanGeneratorPage({showToast}){
     leads.push(lead);
     await store.set("bbr_leads",leads,true);
 
-    // Generate meal plan based on goal
-    const mealPlanHTML=generatePlanHTML(goal,diet,name);
-    
+    generatePlanHTML(goal,diet,name);
     setGenerated(true);
     showToast("Meal plan generated! Check your email.");
   };
@@ -2857,4 +2901,3 @@ function MealPlanGeneratorPage({showToast}){
     </>)}
   </div>);
 }
-
