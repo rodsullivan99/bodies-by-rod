@@ -406,16 +406,63 @@ const WO_PROMPT=(g,l,d,f)=>`Bodies by Rod trainer. ${d}-day plan. Goal:${g} Leve
 const BLOG_PROMPT=(t)=>`Short punchy blog post for Bodies by Rod about: "${t}". 3 short paragraphs. Street energy, direct, no fluff. No headers or markdown.`;
 const CHECKIN_PROMPT=(mood,energy,wins,blocks)=>`You're Rod, elite fitness coach. Client check-in: Mood ${mood}/5, Energy ${energy}/5, Wins: "${wins||"none yet"}", Blocking: "${blocks||"nothing"}". Give a direct, real 3-sentence response. Push them forward. No fluff, no corporate speak.`;
 
+const buildWorkoutFallback=(prompt="")=>{
+  const days=Math.max(3,Math.min(6,parseInt((prompt.match(/(\d+)-day plan/)||[])[1]||"4")||4));
+  const focus=(prompt.match(/Focus:([^.]*)/)||[])[1]?.trim()||"Full Body";
+  const goal=(prompt.match(/Goal:([^ ](?:.*?)) Level:/)||[])[1]?.trim()||"Build Muscle";
+  const templates=[
+    ["Day 1 - Upper Power",[["Bench Press","4x8","Set your shoulder blades, lower under control, and drive the bar up hard."],["Bent-Over Row","4x10","Brace your core, pull elbows back, and squeeze between the shoulder blades."],["Incline Dumbbell Press","3x10","Keep wrists stacked and press without letting your shoulders roll forward."],["Lat Pulldown","3x12","Pull to upper chest, keep ribs down, and control the stretch."],["Plank","3x45 sec","Lock ribs and hips in place. Do not let your lower back sag."]]],
+    ["Day 2 - Lower Strength",[["Back Squat","4x8","Feet planted, knees track over toes, sit between the hips, and stand tall."],["Romanian Deadlift","4x10","Hinge back, keep the bar close, and feel hamstrings load before standing."],["Walking Lunge","3x12/leg","Step long, stay balanced, and push through the front heel."],["Leg Curl","3x12","Control the negative and squeeze hard at the top."],["Calf Raise","4x15","Pause at the top and stretch fully at the bottom."]]],
+    ["Day 3 - Conditioning + Core",[["Dumbbell Thruster","4x12","Squat clean, drive through the floor, and press overhead in one motion."],["Kettlebell Swing","4x15","Snap the hips, keep arms loose, and do not squat the swing."],["Push-Up","3xAMRAP","Hands under shoulders, body straight, chest to floor."],["Mountain Climber","4x30 sec","Keep hips low and move fast without losing position."],["Dead Bug","3x10/side","Press low back down and move slow."]]],
+    ["Day 4 - Full Body Build",[["Deadlift","4x6","Brace first, push the floor away, and finish with glutes, not your lower back."],["Dumbbell Shoulder Press","4x10","Keep ribs down and press straight overhead."],["Goblet Squat","3x12","Stay tall, elbows inside knees, and own the bottom position."],["Seated Cable Row","3x12","Pull to ribs and pause before returning."],["Farmer Carry","4x40 yd","Stand tall, squeeze handles, and walk with control."]]],
+    ["Day 5 - Athletic Finish",[["Box Jump","5x5","Land soft, step down, and make every rep explosive."],["Front Squat","4x8","Elbows high, brace tight, and keep torso upright."],["Pull-Up or Assisted Pull-Up","4xAMRAP","Start from a dead hang and drive elbows down."],["Dumbbell RDL","3x12","Hips back, back flat, hamstrings loaded."],["Bike Sprint","8x20 sec","Go all out, then recover 70 seconds."]]],
+    ["Day 6 - Pump + Recovery",[["Incline Walk","20 min","Keep a steady pace and nasal breathe when possible."],["Cable Fly","3x15","Stretch wide and hug the chest together."],["Lateral Raise","4x15","Lead with elbows and stop at shoulder height."],["Face Pull","3x15","Pull toward eyes and rotate thumbs back."],["Hip Mobility Flow","3 rounds","Move slow through hips, hamstrings, and ankles."]]],
+  ];
+  return JSON.stringify({workouts:templates.slice(0,days).map(([day,exercises])=>({
+    day:`${day} (${focus} / ${goal})`,
+    exercises:exercises.map(([name,sets,howTo])=>({name,sets,howTo}))
+  }))});
+};
+
+const localAIResponse=({messages=[],system=""})=>{
+  const latest=String([...messages].reverse().find(m=>m.role!=="assistant")?.content||"").toLowerCase();
+  const prompt=String(messages[messages.length-1]?.content||"");
+  if(prompt.includes("\"workouts\"")||prompt.includes("JSON only"))return buildWorkoutFallback(prompt);
+  if(prompt.includes("Client check-in")||latest.includes("check-in")){
+    return "You checked in, so now move with the truth. Lock in one clean meal, drink water, and get a 20-minute walk or workout done today. Do not wait for perfect energy; build momentum and report back tomorrow.";
+  }
+  if(prompt.includes("Short punchy blog post")){
+    const topic=(prompt.match(/about: "([^"]+)"/)||[])[1]||"staying consistent";
+    return `Most people do not need a new plan. They need to stop disappearing when the plan gets uncomfortable. ${topic} comes down to doing the basic work when nobody is clapping.\n\nBodies by Rod is built around that standard: train, eat, check in, adjust, repeat. If your week is messy, you do not quit. You tighten the next meal, the next workout, the next decision.\n\nThat is how the body changes. That is how the business changes too. Stack enough disciplined days and the results stop being a wish. They become evidence.`;
+  }
+  if(system.includes("intake AI")||system.includes("Qualify leads")){
+    if(latest.includes("price")||latest.includes("cost")||latest.includes("money"))return "Real talk: GRIND is $480/month, HUSTLE is $550/month, and EMPIRE is $1,500/month. If you need the cleanest first move, start with the $75 strategy consult and let Rod map the right package. What result are you trying to lock in first?";
+    if(latest.includes("ready")||latest.includes("start")||latest.includes("yes"))return "Good. Start with the $75 strategy consult so Rod can hear the goal, check the timeline, and tell you which package fits. What has stopped you from getting this done already?";
+    return "What are you trying to build first: your body, your fitness business, or both? Give me the goal and the timeline so I can point you to GRIND, HUSTLE, EMPIRE, or the $75 consult.";
+  }
+  if(latest.includes("package")||latest.includes("price")||latest.includes("cost"))return "Packages start with GRIND at $480/month, HUSTLE at $550/month, and EMPIRE at $1,500/month. If you are not sure where to start, book the $75 strategy consult first.";
+  if(latest.includes("phone")||latest.includes("call")||latest.includes("rod")||latest.includes("book")||latest.includes("consult"))return "If you want Rod on the phone, start with the $75 strategy consult. It covers your goal, the right package, and the next move before you commit.";
+  if(latest.includes("meal")||latest.includes("food")||latest.includes("nutrition"))return "For meals, start with the free meal plan or R.O.D. Meals. Pick your goal, choose your diet style, and use the plan as your week-one structure.";
+  if(latest.includes("referral")||latest.includes("refer")||latest.includes("loyalty"))return "Use Refer & Earn and Loyalty to track who you send in and what reward connects to it. Rewards are tied to real committed clients.";
+  if(latest.includes("lifewave")||latest.includes("patch"))return "LifeWave patches are listed as part of the Bodies by Rod wellness stack. Start with your goal first, then ask Rod which patch setup fits training, recovery, energy, or sleep.";
+  return "I can help with Bodies by Rod packages, booking Rod for a phone consult, meal prep, check-ins, referrals, LifeWave patches, and where to start. Tell me your goal and I will point you to the right next step.";
+};
+
 const askAI=async({messages,system,maxTokens=500})=>{
-  const res=await fetch("/.netlify/functions/ai-helper",{
-    method:"POST",
-    cache:"no-store",
-    headers:{"Content-Type":"application/json","Cache-Control":"no-cache"},
-    body:JSON.stringify({messages,system,maxTokens})
-  });
-  if(!res.ok)throw new Error("AI helper unavailable");
-  const data=await res.json();
-  return data.text||"";
+  const fallback=localAIResponse({messages,system});
+  try{
+    const res=await fetch(`/.netlify/functions/ai-helper?t=${Date.now()}`,{
+      method:"POST",
+      cache:"no-store",
+      headers:{"Content-Type":"application/json","Cache-Control":"no-cache"},
+      body:JSON.stringify({messages,system,maxTokens})
+    });
+    if(!res.ok)return fallback;
+    const data=await res.json();
+    return data.text||fallback;
+  }catch{
+    return fallback;
+  }
 };
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
