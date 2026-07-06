@@ -408,10 +408,13 @@ const CHECKIN_PROMPT=(mood,energy,wins,blocks)=>`You're Rod, elite fitness coach
 
 const askAI=async({messages,system,maxTokens=500})=>{
   const res=await fetch("/.netlify/functions/ai-helper",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({messages,system,maxTokens})});
-  if(!res.ok)throw new Error("AI helper unavailable");
   const data=await res.json();
-  return data.text||"";
+  if(!res.ok)throw new Error(data.error||"AI helper unavailable");
+  if(!data.text)throw new Error("AI returned an empty response");
+  return data.text;
 };
+
+const AI_OFFLINE_MSG="The AI is having trouble connecting right now. Refresh and try again; if this keeps happening, Netlify AI Gateway needs to be enabled for the deployed site.";
 
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App(){
@@ -489,8 +492,9 @@ function SiteAIHelper(){
     try{
       const reply=await askAI({maxTokens:420,system:"You are the helpful website assistant for Bodies by Rod. Answer questions about the website, packages, consults, booking, Stripe checkout, meal prep, check-ins, referrals, and getting started. Be concise, direct, and helpful. Do not promise availability or payment completion. If payment links are asked about, tell the visitor checkout opens through secure Stripe links once configured.",messages:next.slice(-8)});
       setMsgs([...next,{role:"assistant",content:reply||"I can help with packages, booking, payment steps, and where to start."}]);
-    }catch{
-      setMsgs([...next,{role:"assistant",content:"I can help, but the AI helper is not connected right now. Try again after the site is deployed with Netlify AI Gateway enabled."}]);
+    }catch(error){
+      console.error(error);
+      setMsgs([...next,{role:"assistant",content:AI_OFFLINE_MSG}]);
     }
     setLoading(false);
   };
@@ -909,7 +913,7 @@ function CheckInPage({showToast}){
       await store.set("bbr_checkins",h.slice(0,30));
       setHistory(h.slice(0,30));
       setDone(true);showToast("Check-in submitted!");
-    }catch{setResponse("Keep pushing. Rod sees you.");}
+    }catch(error){console.error(error);setResponse(AI_OFFLINE_MSG);}
     setLoading(false);
   };
 
@@ -1147,13 +1151,15 @@ function MessagesPage(){
 function TrainPage(){
   const [goal,setGoal]=useState("Build Muscle"); const [level,setLevel]=useState("Intermediate");
   const [days,setDays]=useState("4"); const [focus,setFocus]=useState("Full Body");
-  const [loading,setLoading]=useState(false); const [plan,setPlan]=useState(null);
+  const [loading,setLoading]=useState(false); const [plan,setPlan]=useState(null); const [error,setError]=useState("");
   const generate=async()=>{
-    setLoading(true);setPlan(null);
+    setLoading(true);setPlan(null);setError("");
     try{
       const reply=await askAI({maxTokens:1000,messages:[{role:"user",content:WO_PROMPT(goal,level,days,focus)}]});
-      setPlan(JSON.parse((reply||"{}").replace(/```json|```/g,"").trim()));
-    }catch(e){console.error(e);}
+      const parsed=JSON.parse(reply.replace(/```json|```/g,"").trim());
+      if(!Array.isArray(parsed.workouts)||!parsed.workouts.length)throw new Error("Workout plan response was missing workouts");
+      setPlan(parsed);
+    }catch(e){console.error(e);setError("The AI workout builder could not create a clean plan. Try Generate again in a moment.");}
     setLoading(false);
   };
   return(<div className="sec">
@@ -1172,6 +1178,7 @@ function TrainPage(){
           </div>))}
         </div>
         <button className="btn btn-full" onClick={generate} disabled={loading}>{loading?"Building...":"Generate My Program →"}</button>
+        {error&&<div style={{marginTop:12,fontSize:12,color:"var(--red)",lineHeight:1.6}}>{error}</div>}
         {plan?.workouts&&<div style={{marginTop:16}}>
           {plan.workouts.map((day,i)=>(<div key={i} style={{marginBottom:18}}>
             <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--red)",marginBottom:9,paddingBottom:6,borderBottom:"1px solid var(--bdr)"}}>{day.day}</div>
@@ -1380,7 +1387,7 @@ function BlogPage(){
     setActive(post);setLoading(true);setContent("");
     try{
       setContent(await askAI({maxTokens:700,messages:[{role:"user",content:BLOG_PROMPT(post.title)}]}));
-    }catch{setContent("Loading error.");}
+    }catch(error){console.error(error);setContent(AI_OFFLINE_MSG);}
     setLoading(false);
   };
   if(active)return(<div className="sec" style={{maxWidth:640}}>
@@ -2062,7 +2069,7 @@ function QualifyPage(){
     try{
       const reply=(await askAI({maxTokens:1000,system:Q_PROMPT,messages:[openMsg]}))||"What are you trying to build?";
       setMsgs([openMsg,{role:"assistant",content:reply}]);check(reply);setCount(1);
-    }catch{setMsgs([{role:"assistant",content:"What are you trying to build?"}]);}
+    }catch(error){console.error(error);setMsgs([openMsg,{role:"assistant",content:AI_OFFLINE_MSG}]);}
     setLoading(false);
   };
   const send=async()=>{
@@ -2074,7 +2081,7 @@ function QualifyPage(){
       const reply=await askAI({maxTokens:1000,system:Q_PROMPT,messages:newMsgs});
       setMsgs([...newMsgs,{role:"assistant",content:reply.replace(/\[QUALIFIED\]|\[NOT_QUALIFIED\]/g,"").trim()}]);
       check(reply);
-    }catch{setMsgs([...newMsgs,{role:"assistant",content:"Say that again."}]);}
+    }catch(error){console.error(error);setMsgs([...newMsgs,{role:"assistant",content:AI_OFFLINE_MSG}]);}
     setLoading(false);
   };
   return(<div className="sec" style={{maxWidth:540}}>
