@@ -54,6 +54,17 @@ const fallbackAnswer = (messages) => {
   return "I can help with Bodies by Rod packages, booking a phone consult with Rod, meal prep, check-ins, referrals, LifeWave patches, and where to start. Ask me what you are trying to accomplish and I will point you to the right next step.";
 };
 
+const providerReplyMissedSiteContext = (text) => {
+  const normalized = String(text || "").toLowerCase();
+  return (
+    normalized.includes("i'm claude") ||
+    normalized.includes("i am claude") ||
+    normalized.includes("made by anthropic") ||
+    normalized.includes("could you tell me more about what service") ||
+    normalized.includes("trying to reach someone named rod")
+  );
+};
+
 export default async (req) => {
   if (req.method !== "POST") {
     return respond({ error: "Method not allowed" }, { status: 405 });
@@ -79,6 +90,14 @@ export default async (req) => {
       return respond({ text: fallbackAnswer(messages), fallback: true, reason: "gateway_unavailable" });
     }
 
+    const gatewayMessages = messages.map((message, index) => ({
+      role: message.role === "assistant" ? "assistant" : "user",
+      content:
+        index === messages.length - 1 && message.role !== "assistant"
+          ? `${effectiveSystem}\n\nVisitor question: ${String(message.content || "").slice(0, 4000)}`
+          : String(message.content || "").slice(0, 4000),
+    }));
+
     const response = await fetch(`${baseUrl.replace(/\/$/, "")}/v1/messages`, {
       method: "POST",
       headers: {
@@ -90,10 +109,7 @@ export default async (req) => {
         model: MODEL,
         max_tokens: maxTokens,
         system: effectiveSystem,
-        messages: messages.map((message) => ({
-          role: message.role === "assistant" ? "assistant" : "user",
-          content: String(message.content || "").slice(0, 4000),
-        })),
+        messages: gatewayMessages,
       }),
     });
 
@@ -111,7 +127,11 @@ export default async (req) => {
           .trim()
       : "";
 
-    return respond({ text: text || fallbackAnswer(messages), fallback: !text });
+    if (!text || providerReplyMissedSiteContext(text)) {
+      return respond({ text: fallbackAnswer(messages), fallback: true, reason: "site_context_guard" });
+    }
+
+    return respond({ text, fallback: false });
   } catch (error) {
     console.error("AI helper failed", error);
     return respond({ text: fallbackAnswer(messages), fallback: true, reason: "function_error" });
