@@ -397,7 +397,8 @@ const BLOG_POSTS=[
 const Q_PROMPT=`You are the intake AI for Bodies by Rod. Qualify leads for GRIND $480/mo, HUSTLE $550/mo, EMPIRE $1,500/mo. $75 consult available. Split payments available.
 2-4 sentences max. ONE question. Direct, bold, street energy.
 Ask: 1) Main goal. 2) Readiness to invest. 3) Timeline. 4) What stopped them. 5) Mover or waiter.
-HIGH = clear goals, urgency, growth mindset. LOW = vague, price-fixated, passive.
+Also factor in health readiness. If they mention recent surgery, medical restrictions, chest pain, fainting, uncontrolled blood pressure, pregnancy/postpartum concerns, serious injury, or no doctor clearance when clearance is needed, do not clear them for training until they speak with a medical professional.
+HIGH = clear goals, urgency, growth mindset, and medically ready to train. LOW = vague, price-fixated, passive, or needs medical clearance first.
 HIGH end: "You're built for this. Start with the $75 strategy consult — fully credited when you join." → [QUALIFIED]
 LOW end: "Come back when you're ready to move." → [NOT_QUALIFIED]`;
 const WO_PROMPT=(g,l,d,f)=>`Bodies by Rod trainer. ${d}-day plan. Goal:${g} Level:${l} Focus:${f}. JSON only no markdown:
@@ -471,7 +472,7 @@ export default function App(){
       {page==="lifewave"&&<LifeWavePage/>}
       {page==="portal"&&<PortalPage setPage={setPage}/>}
       {page==="admin"&&<AdminPage showToast={showToast}/>}
-      {page==="qualify"&&<QualifyPage/>}
+      {page==="qualify"&&<QualifyPage setPage={setPage}/>}
     </div>
     <SiteAIHelper/>
   </>);
@@ -2052,20 +2053,35 @@ function AdminPage({showToast}){
 }
 
 // ─── QUALIFY ──────────────────────────────────────────────────────────────────
-function QualifyPage(){
+function QualifyPage({setPage}){
   const [started,setStarted]=useState(false); const [name,setName]=useState("");
+  const [healthStep,setHealthStep]=useState(false);
+  const [health,setHealth]=useState({
+    recentSurgery:"",
+    doctorCleared:"",
+    injuries:"",
+    medicalConditions:"",
+    medications:"",
+    symptoms:"",
+    limitations:"",
+    emergencyContact:"",
+  });
   const [msgs,setMsgs]=useState([]); const [input,setInput]=useState("");
   const [loading,setLoading]=useState(false); const [status,setStatus]=useState(null); const [count,setCount]=useState(0);
   const ref=useRef(null);
   useEffect(()=>{ref.current?.scrollIntoView({behavior:"smooth"});},[msgs,loading]);
+  const needsClearance=health.recentSurgery==="yes"&&health.doctorCleared!=="yes";
+  const healthReady=health.recentSurgery&&health.doctorCleared&&health.injuries.trim()&&health.medicalConditions.trim()&&health.medications.trim()&&health.symptoms&&health.limitations.trim()&&health.emergencyContact.trim();
+  const healthSummary=()=>`Health screening for ${name}: recent surgery=${health.recentSurgery}; doctor cleared=${health.doctorCleared}; injuries/pain=${health.injuries}; medical conditions=${health.medicalConditions}; medications=${health.medications}; chest pain/dizziness/fainting during activity=${health.symptoms}; movement limits=${health.limitations}; emergency contact provided=${health.emergencyContact ? "yes" : "no"}.`;
   const check=(text)=>{
     if(text.includes("[QUALIFIED]"))setTimeout(()=>setStatus("qualified"),800);
     else if(text.includes("[NOT_QUALIFIED]"))setTimeout(()=>setStatus("nq"),800);
   };
+  const updateHealth=(key,value)=>setHealth(h=>({...h,[key]:value}));
   const start=async()=>{
-    if(!name.trim())return;
+    if(!name.trim()||!healthReady||needsClearance)return;
     setStarted(true);setLoading(true);
-    const openMsg={role:"user",content:`My name is ${name}. I was referred to Bodies by Rod.`};
+    const openMsg={role:"user",content:`My name is ${name}. I was referred to Bodies by Rod. ${healthSummary()}`};
     try{
       const reply=(await askAI({maxTokens:1000,system:Q_PROMPT,messages:[openMsg]}))||"What are you trying to build?";
       setMsgs([openMsg,{role:"assistant",content:reply}]);check(reply);setCount(1);
@@ -2097,12 +2113,53 @@ function QualifyPage(){
           </div>
         </div>
       </div>
-      {!started?(
+      {!started&&!healthStep?(
         <div style={{padding:"24px 17px",textAlign:"center"}}>
           <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:22,color:"var(--w)",marginBottom:5}}>YOU WERE REFERRED.</div>
           <div style={{fontSize:12,color:"var(--mut)",marginBottom:20,lineHeight:1.7,fontWeight:300}}>5 minutes. Be real. Let's see if you qualify.</div>
-          <input className="inp" style={{textAlign:"center",marginBottom:9}} value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&start()} placeholder="Enter your first name"/>
-          <button className="btn btn-full" onClick={start} disabled={!name.trim()}>Start My Intake →</button>
+          <input className="inp" style={{textAlign:"center",marginBottom:9}} value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&name.trim()&&setHealthStep(true)} placeholder="Enter your first name"/>
+          <button className="btn btn-full" onClick={()=>setHealthStep(true)} disabled={!name.trim()}>Continue to Safety Check →</button>
+        </div>
+      ):healthStep&&!started?(
+        <div style={{padding:"18px 17px"}}>
+          <div style={{fontFamily:"'Oswald',sans-serif",fontSize:10,letterSpacing:3,textTransform:"uppercase",color:"var(--gold)",marginBottom:6}}>Required Before Training</div>
+          <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:20,color:"var(--w)",marginBottom:7}}>HEALTH CLEARANCE CHECK</div>
+          <div style={{fontSize:11,color:"var(--mut)",lineHeight:1.7,marginBottom:14}}>Answer this honestly so Rod can point you toward the right pace, modifications, and next step.</div>
+          <div style={{display:"grid",gap:12}}>
+            <div>
+              <div className="lbl">Recent surgery, procedure, or hospital visit?</div>
+              <select className="sel" value={health.recentSurgery} onChange={e=>updateHealth("recentSurgery",e.target.value)}>
+                <option value="">Select one</option><option value="no">No</option><option value="yes">Yes</option>
+              </select>
+            </div>
+            <div>
+              <div className="lbl">Has your doctor cleared you to work out?</div>
+              <select className="sel" value={health.doctorCleared} onChange={e=>updateHealth("doctorCleared",e.target.value)}>
+                <option value="">Select one</option><option value="yes">Yes</option><option value="no">No</option><option value="not-needed">No recent medical issue</option>
+              </select>
+            </div>
+            {needsClearance&&<div style={{background:"rgba(232,25,44,0.08)",border:"1px solid rgba(232,25,44,0.25)",borderRadius:3,padding:"10px 12px",fontSize:11,color:"var(--mut)",lineHeight:1.65}}>
+              Get medical clearance first. Rod can still do a strategy consult, but training should wait until a doctor clears you.
+            </div>}
+            <div><div className="lbl">Current injuries, pain, or problem areas *</div><textarea className="ta" value={health.injuries} onChange={e=>updateHealth("injuries",e.target.value)} placeholder="Knees, back, shoulders, past injuries, or type none"/></div>
+            <div><div className="lbl">Medical conditions Rod should know *</div><textarea className="ta" value={health.medicalConditions} onChange={e=>updateHealth("medicalConditions",e.target.value)} placeholder="Blood pressure, diabetes, asthma, heart issues, postpartum, or type none"/></div>
+            <div><div className="lbl">Medications that affect training, heart rate, or energy *</div><input className="inp" value={health.medications} onChange={e=>updateHealth("medications",e.target.value)} placeholder="List them or type none"/></div>
+            <div>
+              <div className="lbl">Chest pain, dizziness, or fainting with activity?</div>
+              <select className="sel" value={health.symptoms} onChange={e=>updateHealth("symptoms",e.target.value)}>
+                <option value="">Select one</option><option value="no">No</option><option value="yes">Yes</option>
+              </select>
+            </div>
+            {health.symptoms==="yes"&&<div style={{background:"rgba(232,25,44,0.08)",border:"1px solid rgba(232,25,44,0.25)",borderRadius:3,padding:"10px 12px",fontSize:11,color:"var(--mut)",lineHeight:1.65}}>
+              Talk to a medical professional before starting intense training. The intake can continue, but this must be addressed before workouts.
+            </div>}
+            <div><div className="lbl">Movements to avoid or modify *</div><input className="inp" value={health.limitations} onChange={e=>updateHealth("limitations",e.target.value)} placeholder="Running, jumping, overhead pressing, or type none"/></div>
+            <div><div className="lbl">Emergency contact name + phone *</div><input className="inp" value={health.emergencyContact} onChange={e=>updateHealth("emergencyContact",e.target.value)} placeholder="Name and phone number"/></div>
+          </div>
+          <div style={{display:"flex",gap:8,marginTop:14}}>
+            <button className="btn btn-ol btn-sm" onClick={()=>setHealthStep(false)}>← Back</button>
+            <button className="btn" style={{flex:1}} onClick={start} disabled={!healthReady||needsClearance||loading}>Start My Intake →</button>
+          </div>
         </div>
       ):(
         <>
@@ -2118,7 +2175,7 @@ function QualifyPage(){
           {status==="qualified"&&(<div style={{margin:"9px 13px 13px",background:"rgba(232,25,44,0.06)",border:"1px solid rgba(232,25,44,0.22)",borderRadius:3,padding:"16px",textAlign:"center",animation:"up 0.4s ease"}}>
             <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:20,color:"var(--red)",marginBottom:5}}>✓ YOU QUALIFIED</div>
             <div style={{fontSize:11,color:"var(--mut)",marginBottom:12,lineHeight:1.65}}>Start with the $75 strategy call — credited when you join. One call changes everything.</div>
-            <button className="btn" style={{display:"inline-block",textDecoration:"none",fontSize:11}} onClick={()=>window.scrollTo({top:0,behavior:"smooth"})}>Book $75 Consult →</button>
+            <button className="btn" style={{display:"inline-block",textDecoration:"none",fontSize:11}} onClick={()=>setPage("consult")}>Book $75 Consult →</button>
             <div style={{fontSize:10,color:"var(--mut)",marginTop:7}}>Fully credited toward your package when you join.</div>
           </div>)}
           {status==="nq"&&(<div style={{margin:"9px 13px 13px",background:"rgba(255,255,255,0.02)",border:"1px solid var(--bdr)",borderRadius:3,padding:"12px",textAlign:"center"}}>
@@ -2510,7 +2567,7 @@ function StreakCounter({streak=7,habits=5,checkins=12}){
 function SessionsPage({setPage,showToast}){
   const [sessionType,setSessionType]=useState("online");
   const [platform,setPlatform]=useState("FaceTime");
-  const [frequency,setFrequency]=useState("1x");
+  const [frequency,setFrequency]=useState("2x");
   const [step,setStep]=useState(1);
 
   const sessions={
@@ -2541,7 +2598,6 @@ function SessionsPage({setPage,showToast}){
   };
 
   const frequencyOptions=[
-    {val:"1x",label:"1x per week",sessions:4,monthlyTotal:180},
     {val:"2x",label:"2x per week",sessions:8,monthlyTotal:360},
     {val:"3x",label:"3x per week",sessions:12,monthlyTotal:540},
     {val:"4x",label:"4x per week",sessions:16,monthlyTotal:720},
@@ -2595,7 +2651,7 @@ function SessionsPage({setPage,showToast}){
         <div style={{fontFamily:"'Oswald',sans-serif",fontSize:10,letterSpacing:2,color:"var(--gold)",marginBottom:10}}>HOW IT WORKS</div>
         {[
           {num:"1",title:"Pick Your Session Type",desc:"Online, in-person, or phone check-in"},
-          {num:"2",title:"Choose Your Frequency",desc:"1x, 2x, 3x, or 4x per week"},
+          {num:"2",title:"Choose Your Frequency",desc:"2x minimum, 3x, or 4x per week"},
           {num:"3",title:"Pay Per Session",desc:"No contracts. Cancel anytime."},
           {num:"4",title:"Book Your Times",desc:"Live calendar — Rod blocks out his availability"},
           {num:"5",title:"Train with Rod",desc:"FaceTime, Zoom, Google Meet, or in person"},
