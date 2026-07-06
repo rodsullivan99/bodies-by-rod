@@ -1,7 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-const anthropic = new Anthropic();
-
 const MODEL = "claude-sonnet-4-5";
 
 const fallbackAnswer = (messages: Array<{ role?: string; content?: string }>) => {
@@ -47,6 +45,7 @@ export default async (req: Request) => {
       return Response.json({ error: "Missing messages" }, { status: 400 });
     }
 
+    const anthropic = new Anthropic();
     const response = await anthropic.messages.create({
       model: MODEL,
       max_tokens: maxTokens,
