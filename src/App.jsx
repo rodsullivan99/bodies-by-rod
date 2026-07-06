@@ -490,7 +490,7 @@ function SiteAIHelper(){
       const reply=await askAI({maxTokens:420,system:"You are the helpful website assistant for Bodies by Rod. Answer questions about the website, packages, consults, booking, Stripe checkout, meal prep, check-ins, referrals, and getting started. Be concise, direct, and helpful. Do not promise availability or payment completion. If payment links are asked about, tell the visitor checkout opens through secure Stripe links once configured.",messages:next.slice(-8)});
       setMsgs([...next,{role:"assistant",content:reply||"I can help with packages, booking, payment steps, and where to start."}]);
     }catch{
-      setMsgs([...next,{role:"assistant",content:"I can help, but the AI helper is not connected right now. Try again after the site is deployed with Netlify AI Gateway enabled."}]);
+      setMsgs([...next,{role:"assistant",content:"I can help with packages, booking, meal prep, check-ins, referrals, and where to start. Ask me what you are trying to accomplish and I will point you to the right next step."}]);
     }
     setLoading(false);
   };
