@@ -424,6 +424,18 @@ const buildWorkoutFallback=(prompt="")=>{
   }))});
 };
 
+const parseWorkoutPlan=(reply,prompt)=>{
+  const fallback=JSON.parse(buildWorkoutFallback(prompt));
+  const raw=String(reply||"").replace(/```json|```/g,"").trim();
+  if(!raw)return fallback;
+  const jsonText=(raw.match(/\{[\s\S]*\}/)||[])[0]||raw;
+  try{
+    const parsed=JSON.parse(jsonText);
+    if(Array.isArray(parsed?.workouts)&&parsed.workouts.length)return parsed;
+  }catch{}
+  return fallback;
+};
+
 const localAIResponse=({messages=[],system=""})=>{
   const latest=String([...messages].reverse().find(m=>m.role!=="assistant")?.content||"").toLowerCase();
   const prompt=String(messages[messages.length-1]?.content||"");
@@ -1199,13 +1211,18 @@ function MessagesPage(){
 function TrainPage(){
   const [goal,setGoal]=useState("Build Muscle"); const [level,setLevel]=useState("Intermediate");
   const [days,setDays]=useState("4"); const [focus,setFocus]=useState("Full Body");
-  const [loading,setLoading]=useState(false); const [plan,setPlan]=useState(null);
+  const [loading,setLoading]=useState(false); const [plan,setPlan]=useState(null); const [generated,setGenerated]=useState(false);
   const generate=async()=>{
-    setLoading(true);setPlan(null);
+    setLoading(true);setPlan(null);setGenerated(false);
+    const prompt=WO_PROMPT(goal,level,days,focus);
     try{
-      const reply=await askAI({maxTokens:1000,messages:[{role:"user",content:WO_PROMPT(goal,level,days,focus)}]});
-      setPlan(JSON.parse((reply||"{}").replace(/```json|```/g,"").trim()));
-    }catch(e){console.error(e);}
+      const reply=await askAI({maxTokens:1000,messages:[{role:"user",content:prompt}]});
+      setPlan(parseWorkoutPlan(reply,prompt));
+    }catch(e){
+      console.error(e);
+      setPlan(parseWorkoutPlan("",prompt));
+    }
+    setGenerated(true);
     setLoading(false);
   };
   return(<div className="sec">
@@ -1224,6 +1241,7 @@ function TrainPage(){
           </div>))}
         </div>
         <button className="btn btn-full" onClick={generate} disabled={loading}>{loading?"Building...":"Generate My Program →"}</button>
+        {generated&&!plan?.workouts&&<div style={{marginTop:14,fontSize:12,color:"var(--mut)",lineHeight:1.7}}>Program is ready to rebuild. Tap generate again and Rod's fallback plan loads even if the AI connection is busy.</div>}
         {plan?.workouts&&<div style={{marginTop:16}}>
           {plan.workouts.map((day,i)=>(<div key={i} style={{marginBottom:18}}>
             <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--red)",marginBottom:9,paddingBottom:6,borderBottom:"1px solid var(--bdr)"}}>{day.day}</div>

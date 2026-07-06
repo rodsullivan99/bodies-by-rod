@@ -21,7 +21,28 @@ const respond = (body, init = {}) =>
   });
 
 const fallbackAnswer = (messages) => {
-  const latest = String([...messages].reverse().find((message) => message.role !== "assistant")?.content || "").toLowerCase();
+  const latestMessage = String([...messages].reverse().find((message) => message.role !== "assistant")?.content || "");
+  const latest = latestMessage.toLowerCase();
+
+  if (latestMessage.includes('"workouts"') || latestMessage.includes("JSON only")) {
+    const days = Math.max(3, Math.min(6, parseInt((latestMessage.match(/(\d+)-day plan/) || [])[1] || "4", 10) || 4));
+    const focus = (latestMessage.match(/Focus:([^.]*)/) || [])[1]?.trim() || "Full Body";
+    const goal = (latestMessage.match(/Goal:([^ ](?:.*?)) Level:/) || [])[1]?.trim() || "Build Muscle";
+    const templates = [
+      ["Day 1 - Upper Power", [["Bench Press", "4x8", "Set your shoulder blades, lower under control, and drive the bar up hard."], ["Bent-Over Row", "4x10", "Brace your core, pull elbows back, and squeeze between the shoulder blades."], ["Incline Dumbbell Press", "3x10", "Keep wrists stacked and press without letting your shoulders roll forward."], ["Lat Pulldown", "3x12", "Pull to upper chest, keep ribs down, and control the stretch."], ["Plank", "3x45 sec", "Lock ribs and hips in place. Do not let your lower back sag."]]],
+      ["Day 2 - Lower Strength", [["Back Squat", "4x8", "Feet planted, knees track over toes, sit between the hips, and stand tall."], ["Romanian Deadlift", "4x10", "Hinge back, keep the bar close, and feel hamstrings load before standing."], ["Walking Lunge", "3x12/leg", "Step long, stay balanced, and push through the front heel."], ["Leg Curl", "3x12", "Control the negative and squeeze hard at the top."], ["Calf Raise", "4x15", "Pause at the top and stretch fully at the bottom."]]],
+      ["Day 3 - Conditioning + Core", [["Dumbbell Thruster", "4x12", "Squat clean, drive through the floor, and press overhead in one motion."], ["Kettlebell Swing", "4x15", "Snap the hips, keep arms loose, and do not squat the swing."], ["Push-Up", "3xAMRAP", "Hands under shoulders, body straight, chest to floor."], ["Mountain Climber", "4x30 sec", "Keep hips low and move fast without losing position."], ["Dead Bug", "3x10/side", "Press low back down and move slow."]]],
+      ["Day 4 - Full Body Build", [["Deadlift", "4x6", "Brace first, push the floor away, and finish with glutes, not your lower back."], ["Dumbbell Shoulder Press", "4x10", "Keep ribs down and press straight overhead."], ["Goblet Squat", "3x12", "Stay tall, elbows inside knees, and own the bottom position."], ["Seated Cable Row", "3x12", "Pull to ribs and pause before returning."], ["Farmer Carry", "4x40 yd", "Stand tall, squeeze handles, and walk with control."]]],
+      ["Day 5 - Athletic Finish", [["Box Jump", "5x5", "Land soft, step down, and make every rep explosive."], ["Front Squat", "4x8", "Elbows high, brace tight, and keep torso upright."], ["Pull-Up or Assisted Pull-Up", "4xAMRAP", "Start from a dead hang and drive elbows down."], ["Dumbbell RDL", "3x12", "Hips back, back flat, hamstrings loaded."], ["Bike Sprint", "8x20 sec", "Go all out, then recover 70 seconds."]]],
+      ["Day 6 - Pump + Recovery", [["Incline Walk", "20 min", "Keep a steady pace and nasal breathe when possible."], ["Cable Fly", "3x15", "Stretch wide and hug the chest together."], ["Lateral Raise", "4x15", "Lead with elbows and stop at shoulder height."], ["Face Pull", "3x15", "Pull toward eyes and rotate thumbs back."], ["Hip Mobility Flow", "3 rounds", "Move slow through hips, hamstrings, and ankles."]]],
+    ];
+    return JSON.stringify({
+      workouts: templates.slice(0, days).map(([day, exercises]) => ({
+        day: `${day} (${focus} / ${goal})`,
+        exercises: exercises.map(([name, sets, howTo]) => ({ name, sets, howTo })),
+      })),
+    });
+  }
 
   if (latest.includes("package") || latest.includes("price") || latest.includes("cost")) {
     return "Packages start with GRIND at $480/month, HUSTLE at $550/month, and EMPIRE at $1,500/month. If you are not sure where to start, book the $75 strategy consult first.";
