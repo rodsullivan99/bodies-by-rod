@@ -1,11 +1,25 @@
-import Anthropic from "@anthropic-ai/sdk";
-
 const MODEL = "claude-sonnet-4-5";
+const SITE_SYSTEM = [
+  "You are the AI helper for Bodies by Rod, also called R.O.D. Ready On Demand.",
+  "Help visitors choose between GRIND at $480/month, HUSTLE at $550/month, EMPIRE at $1,500/month, the $75 strategy consult, meal prep, check-ins, referrals, LifeWave patches, and booking Rod for a phone consult.",
+  "Be direct, concise, and practical. Do not say you do not know who Rod or Bodies by Rod is.",
+  "Do not promise payment completion, exact availability, medical results, or that Rod personally saw a message unless the site flow says so.",
+].join(" ");
 const jsonHeaders = {
+  "Content-Type": "application/json",
   "Cache-Control": "no-store, max-age=0",
 };
 
-const fallbackAnswer = (messages: Array<{ role?: string; content?: string }>) => {
+const respond = (body, init = {}) =>
+  new Response(JSON.stringify(body), {
+    ...init,
+    headers: {
+      ...jsonHeaders,
+      ...(init.headers || {}),
+    },
+  });
+
+const fallbackAnswer = (messages) => {
   const latest = String([...messages].reverse().find((message) => message.role !== "assistant")?.content || "").toLowerCase();
 
   if (latest.includes("package") || latest.includes("price") || latest.includes("cost")) {
@@ -39,43 +53,66 @@ const fallbackAnswer = (messages: Array<{ role?: string; content?: string }>) =>
   return "I can help with Bodies by Rod packages, booking a phone consult with Rod, meal prep, check-ins, referrals, LifeWave patches, and where to start. Ask me what you are trying to accomplish and I will point you to the right next step.";
 };
 
-export default async (req: Request) => {
+export default async (req) => {
   if (req.method !== "POST") {
-    return Response.json({ error: "Method not allowed" }, { status: 405, headers: jsonHeaders });
+    return respond({ error: "Method not allowed" }, { status: 405 });
   }
 
-  let messages: Array<{ role?: string; content?: string }> = [];
+  let messages = [];
 
   try {
     const body = await req.json();
     messages = Array.isArray(body.messages) ? body.messages : [];
     const system = typeof body.system === "string" ? body.system : undefined;
+    const effectiveSystem = system ? `${SITE_SYSTEM}\n\n${system}` : SITE_SYSTEM;
     const maxTokens = Number.isFinite(body.maxTokens) ? Math.min(Math.max(body.maxTokens, 80), 1200) : 500;
 
     if (!messages.length) {
-      return Response.json({ error: "Missing messages" }, { status: 400, headers: jsonHeaders });
+      return respond({ error: "Missing messages" }, { status: 400 });
     }
 
-    const anthropic = new Anthropic();
-    const response = await anthropic.messages.create({
-      model: MODEL,
-      max_tokens: maxTokens,
-      ...(system ? { system } : {}),
-      messages: messages.map((message: { role?: string; content?: string }) => ({
-        role: message.role === "assistant" ? "assistant" : "user",
-        content: String(message.content || "").slice(0, 4000),
-      })),
+    const baseUrl = process.env.ANTHROPIC_BASE_URL || process.env.NETLIFY_AI_GATEWAY_BASE_URL;
+    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.NETLIFY_AI_GATEWAY_KEY;
+
+    if (!baseUrl || !apiKey) {
+      return respond({ text: fallbackAnswer(messages), fallback: true, reason: "gateway_unavailable" });
+    }
+
+    const response = await fetch(`${baseUrl.replace(/\/$/, "")}/v1/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: maxTokens,
+        system: effectiveSystem,
+        messages: messages.map((message) => ({
+          role: message.role === "assistant" ? "assistant" : "user",
+          content: String(message.content || "").slice(0, 4000),
+        })),
+      }),
     });
 
-    const text = response.content
-      .filter((part) => part.type === "text")
-      .map((part) => part.text)
-      .join("\n")
-      .trim();
+    if (!response.ok) {
+      console.error("AI Gateway HTTP error", response.status);
+      return respond({ text: fallbackAnswer(messages), fallback: true, reason: "gateway_error" });
+    }
 
-    return Response.json({ text: text || fallbackAnswer(messages), fallback: !text }, { headers: jsonHeaders });
+    const data = await response.json();
+    const text = Array.isArray(data.content)
+      ? data.content
+          .filter((part) => part.type === "text")
+          .map((part) => part.text || "")
+          .join("\n")
+          .trim()
+      : "";
+
+    return respond({ text: text || fallbackAnswer(messages), fallback: !text });
   } catch (error) {
     console.error("AI helper failed", error);
-    return Response.json({ text: fallbackAnswer(messages), fallback: true }, { headers: jsonHeaders });
+    return respond({ text: fallbackAnswer(messages), fallback: true, reason: "function_error" });
   }
 };
