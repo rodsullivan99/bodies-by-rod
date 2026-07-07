@@ -1135,7 +1135,7 @@ function PackagesPage({setPage,showToast}){
       <div style={{fontSize:18,flexShrink:0}}>💳</div>
       <div>
         <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:2,color:"var(--gold)",textTransform:"uppercase",marginBottom:3}}>Secure Stripe Checkout</div>
-        <div style={{fontSize:12,color:"var(--mut)",fontWeight:300,lineHeight:1.65}}>Start with a free 7-day trial on any recurring package, then continue through the same secure Stripe subscription.</div>
+        <div style={{fontSize:12,color:"var(--mut)",fontWeight:300,lineHeight:1.65}}>GRIND, HUSTLE, and EMPIRE are for clients ready to commit. Pick the monthly, weekly, or split-pay option that matches your next move.</div>
       </div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(270px,1fr))",gap:14}}>
@@ -1155,38 +1155,6 @@ function PackagesPage({setPage,showToast}){
               <span style={{color:"var(--red)",fontSize:11,flexShrink:0}}>✓</span>{f}
             </li>
           ))}</ul>
-          <div style={{background:"rgba(34,197,94,0.07)",border:"1px solid rgba(34,197,94,0.18)",borderRadius:3,padding:"10px 11px",marginBottom:10}}>
-            <div style={{fontFamily:"'Oswald',sans-serif",fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"var(--green)",marginBottom:3}}>Free 7-Day Trial</div>
-            <div style={{fontSize:10,color:"var(--mut)",lineHeight:1.55}}>Start today, get the first week free, then Stripe begins the recurring package.</div>
-          </div>
-          <button className="btn btn-full btn-green" onClick={async()=>{
-            captureConversion("package-trial-checkout-click", {
-              package: p.name,
-              payment_mode: "trial_monthly",
-              trial_days: "7",
-              value: String(p.price),
-              monthly_value: String(p.price),
-            }).catch(console.error);
-            try{
-              showToast("Starting your free 7-day trial...");
-              await startStripeCheckout({
-                itemKey:p.checkoutKey,
-                trialDays:7,
-                metadata:{
-                  package:p.name,
-                  payment_mode:"trial_monthly",
-                  trial_days:"7",
-                  value:String(p.price),
-                  monthly_value:String(p.price),
-                },
-              });
-            }catch(error){
-              console.error(error);
-              showToast(error.message||"Trial checkout is not ready yet.");
-            }
-          }}>
-            Start Free 7-Day Trial
-          </button>
           <button className={`btn btn-full ${p.feat?"":"btn-ol"}`} style={{marginTop:8}} onClick={async()=>{
             captureConversion("package-checkout-click", {
               package: p.name,
@@ -3070,8 +3038,8 @@ function StreakCounter({streak=7,habits=5,checkins=12}){
 //    - "EMPIRE Split Payment" (one-time, first half)
 //    - Single session prices for online, in-person, and strategy check-in
 //    - Recurring 1x, 2x, 3x, and 4x weekly session plans for each session type
-//    - Free 7-day trials are applied in Checkout for recurring subscriptions,
-//      so they do not require separate Stripe Price IDs.
+//    - Checkout can apply a 7-day subscription trial when the app sends
+//      trialDays: 7. Keep that reserved for low-ticket template offers.
 // 3. Copy each Stripe Price ID and add it to Netlify environment variables:
 //    STRIPE_SECRET_KEY, STRIPE_PRICE_GRIND, STRIPE_PRICE_HUSTLE,
 //    STRIPE_PRICE_EMPIRE, STRIPE_PRICE_GRIND_WEEKLY, STRIPE_PRICE_HUSTLE_WEEKLY,
@@ -3171,28 +3139,26 @@ function SessionsPage({setPage,showToast}){
     showToast(`${sessionRec.name} selected as the best starting point.`);
     setStep(2);
   };
-  const startSessionCheckout=async({mode,trial=false})=>{
+  const startSessionCheckout=async({mode})=>{
     const isSingle=mode==="single";
     const value=isSingle?current.price:monthlyTotal;
-    const stage=trial?"session-trial-checkout-click":isSingle?"session-single-checkout-click":"session-package-checkout-click";
+    const stage=isSingle?"session-single-checkout-click":"session-package-checkout-click";
     const metadata={
       name:name.trim(),
       email:email.trim(),
       session_type:current.name,
       platform,
-      payment_mode:trial?"trial_monthly_sessions":isSingle?"single_session":"monthly_sessions",
-      trial_days:trial?"7":"",
+      payment_mode:isSingle?"single_session":"monthly_sessions",
       value:String(value),
       sessions_per_month:isSingle?"1":String(freqData.sessions),
       monthly_value:isSingle?"":String(monthlyTotal),
     };
     captureConversion(stage,metadata).catch(console.error);
     try{
-      showToast(trial?"Starting your free 7-day session trial...":isSingle?"Redirecting to single session checkout...":"Redirecting to monthly session checkout...");
+      showToast(isSingle?"Redirecting to single session checkout...":"Redirecting to monthly session checkout...");
       await startStripeCheckout({
         itemKey:isSingle?current.singleCheckoutKey:current.monthlyCheckoutKeys[frequency],
         email,
-        trialDays:trial?7:undefined,
         metadata,
       });
     }catch(error){
@@ -3304,7 +3270,7 @@ function SessionsPage({setPage,showToast}){
         {[
           {num:"1",title:"Pick Your Session Type",desc:"Online, in-person, or phone check-in"},
           {num:"2",title:"Buy One Or Build A Plan",desc:"Pay for one session or choose 1x, 2x, 3x, or 4x per week"},
-          {num:"3",title:"Checkout Securely",desc:"Single sessions, monthly plans, and 7-day trials use Stripe"},
+          {num:"3",title:"Checkout Securely",desc:"Single sessions and monthly plans use Stripe"},
           {num:"4",title:"Book Your Times",desc:"Live calendar — Rod blocks out his availability"},
           {num:"5",title:"Train with Rod",desc:"FaceTime, Zoom, Google Meet, or in person"},
         ].map((step,i)=>(
@@ -3372,11 +3338,6 @@ function SessionsPage({setPage,showToast}){
             </div>
           </div>
 
-          <div style={{background:"rgba(34,197,94,0.07)",border:"1px solid rgba(34,197,94,0.18)",borderRadius:3,padding:12,marginBottom:16}}>
-            <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--green)",marginBottom:3}}>Free 7-Day Trial Available</div>
-            <div style={{fontSize:11,color:"var(--mut)",lineHeight:1.6}}>Try the monthly session rhythm for the first week free. After the trial, Stripe continues at the selected monthly rate.</div>
-          </div>
-
           <div style={{display:"grid",gap:10,marginBottom:16}}>
             <div><div className="lbl">Full Name *</div><input className="inp" value={name} onChange={e=>setName(e.target.value)} placeholder="Your name"/></div>
             <div><div className="lbl">Email *</div><input className="inp" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com" type="email"/></div>
@@ -3384,9 +3345,6 @@ function SessionsPage({setPage,showToast}){
 
           <button className="btn btn-full btn-gold" onClick={()=>startSessionCheckout({mode:"single"})} disabled={!platform||!name.trim()||!email.trim()}>
             Buy 1 Session · ${current.price}
-          </button>
-          <button className="btn btn-full btn-green" onClick={()=>startSessionCheckout({mode:"monthly",trial:true})} style={{marginTop:8}} disabled={!platform||!name.trim()||!email.trim()}>
-            Start Free 7-Day Trial
           </button>
           <button className="btn btn-full" onClick={handleBook} style={{background:current.color,marginTop:8}} disabled={!platform||!name.trim()||!email.trim()}>
             Set Up Monthly Sessions →
@@ -3408,9 +3366,6 @@ function SessionsPage({setPage,showToast}){
         </div>
         <button className="btn btn-full" onClick={()=>startSessionCheckout({mode:"monthly"})} style={{background:current.color,marginBottom:8}}>
           Pay Monthly with Stripe
-        </button>
-        <button className="btn btn-full btn-green" onClick={()=>startSessionCheckout({mode:"monthly",trial:true})} style={{marginBottom:8}}>
-          Start Free 7-Day Trial
         </button>
         <button className="btn btn-full btn-ol" onClick={()=>{
           showToast("Session request saved. Pick a time on the booking calendar.");

@@ -4,6 +4,7 @@ import type { Config } from "@netlify/functions";
 type CheckoutItem = {
   priceEnv: string;
   mode: "payment" | "subscription";
+  allowTrial?: boolean;
 };
 
 const ALLOWED_TRIAL_DAYS = new Set([7]);
@@ -81,7 +82,9 @@ export default async (req: Request) => {
     const email = typeof body.email === "string" && body.email.includes("@") ? body.email.trim() : undefined;
     const requestedTrialDays = Number(body.trialDays);
     const trialDays =
-      item.mode === "subscription" && ALLOWED_TRIAL_DAYS.has(requestedTrialDays) ? requestedTrialDays : undefined;
+      item.mode === "subscription" && item.allowTrial && ALLOWED_TRIAL_DAYS.has(requestedTrialDays)
+        ? requestedTrialDays
+        : undefined;
     const origin = getOrigin(req);
     const stripe = new Stripe(secretKey);
 
