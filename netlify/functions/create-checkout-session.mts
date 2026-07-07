@@ -6,6 +6,8 @@ type CheckoutItem = {
   mode: "payment" | "subscription";
 };
 
+const ALLOWED_TRIAL_DAYS = new Set([7]);
+
 const CHECKOUT_ITEMS: Record<string, CheckoutItem> = {
   grind_full: { priceEnv: "STRIPE_PRICE_GRIND", mode: "subscription" },
   grind_weekly: { priceEnv: "STRIPE_PRICE_GRIND_WEEKLY", mode: "subscription" },
@@ -77,12 +79,16 @@ export default async (req: Request) => {
     }
 
     const email = typeof body.email === "string" && body.email.includes("@") ? body.email.trim() : undefined;
+    const requestedTrialDays = Number(body.trialDays);
+    const trialDays =
+      item.mode === "subscription" && ALLOWED_TRIAL_DAYS.has(requestedTrialDays) ? requestedTrialDays : undefined;
     const origin = getOrigin(req);
     const stripe = new Stripe(secretKey);
 
     const session = await stripe.checkout.sessions.create({
       mode: item.mode,
       line_items: [{ price, quantity: 1 }],
+      ...(trialDays ? { subscription_data: { trial_period_days: trialDays } } : {}),
       ...(email ? { customer_email: email } : {}),
       allow_promotion_codes: true,
       billing_address_collection: "auto",
