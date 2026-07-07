@@ -8,8 +8,11 @@ type CheckoutItem = {
 
 const CHECKOUT_ITEMS: Record<string, CheckoutItem> = {
   grind_full: { priceEnv: "STRIPE_PRICE_GRIND", mode: "subscription" },
+  grind_split: { priceEnv: "STRIPE_PRICE_GRIND_SPLIT", mode: "payment" },
   hustle_full: { priceEnv: "STRIPE_PRICE_HUSTLE", mode: "subscription" },
+  hustle_split: { priceEnv: "STRIPE_PRICE_HUSTLE_SPLIT", mode: "payment" },
   empire_full: { priceEnv: "STRIPE_PRICE_EMPIRE", mode: "subscription" },
+  empire_split: { priceEnv: "STRIPE_PRICE_EMPIRE_SPLIT", mode: "payment" },
 };
 
 const json = (body: Record<string, unknown>, status = 200) =>

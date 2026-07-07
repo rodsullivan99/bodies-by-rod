@@ -37,6 +37,18 @@ const startStripeCheckout = async ({ itemKey, email, metadata = {} }) => {
   window.location.href = data.url;
 };
 
+const sendMealPlanEmail = async ({ name = "", email, goal, diet, meals }) => {
+  const response = await fetch("/api/send-meal-plan", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, email, goal, diet, meals }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error || "Meal plan email could not be sent");
+  }
+};
+
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Oswald:wght@300;400;500;600;700&family=Barlow:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -319,15 +331,22 @@ input,textarea,select{-webkit-appearance:none;}
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const PACKAGES=[
-  {tier:"Foundation",name:"GRIND",price:480,feat:false,consult:true,checkoutKey:"grind_full",
+  {tier:"Foundation",name:"GRIND",price:480,feat:false,consult:true,checkoutKey:"grind_full",splitCheckoutKey:"grind_split",
    desc:"Transformation essentials. Custom programs, meal prep, weekly accountability.",
    items:["Custom Monthly Workout","AI Meal Plan","Weekly Check-ins","Video Library","10 Meal Preps/Month","$75 Consult Included"]},
-  {tier:"Most Popular",name:"HUSTLE",price:550,feat:true,badge:"BEST VALUE",consult:true,checkoutKey:"hustle_full",
+  {tier:"Most Popular",name:"HUSTLE",price:550,feat:true,badge:"BEST VALUE",consult:true,checkoutKey:"hustle_full",splitCheckoutKey:"hustle_split",
    desc:"Fitness + business. Get in shape and start earning from fitness.",
    items:["Everything in Grind","Trainer Certification","Client Templates","Lead Gen Training","Monthly 1-on-1 Call","$75 Consult Included"]},
-  {tier:"Elite",name:"EMPIRE",price:1500,feat:false,checkoutKey:"empire_full",
+  {tier:"Elite",name:"EMPIRE",price:1500,feat:false,checkoutKey:"empire_full",splitCheckoutKey:"empire_split",
    desc:"The full system. Body, brand, certification, real clients, real leads.",
    items:["Everything in Hustle","Weekly 1-on-1 Coaching","Real Leads Monthly","Revenue Share","Custom Brand Kit","Mentorship Under Rod"]},
+];
+const STARTER_MEAL_PLAN=[
+  {meal:"Breakfast",food:"Egg white omelette, oatmeal, berries",macros:"35P / 45C / 4F"},
+  {meal:"Snack",food:"Greek yogurt, banana, almonds",macros:"25P / 30C / 10F"},
+  {meal:"Lunch",food:"Grilled chicken, jasmine rice, broccoli",macros:"45P / 55C / 5F"},
+  {meal:"Snack",food:"Protein shake and rice cakes",macros:"30P / 35C / 2F"},
+  {meal:"Dinner",food:"Salmon, sweet potato, asparagus",macros:"42P / 40C / 14F"},
 ];
 const TRANSFORMS=[
   {name:"Marcus T.",result:"Lost 38 lbs — 90 days",pkg:"HUSTLE",b:"😐",a:"🔥",t:"90 days"},
@@ -580,6 +599,12 @@ function HomePage({setPage,showToast}){
       await submitNetlifyForm("free-meal-plan-quick", {
         email: email.trim(),
         source: "Hero Free Meal Plan",
+      });
+      await sendMealPlanEmail({
+        email: email.trim(),
+        goal: "Starter Plan",
+        diet: "Regular",
+        meals: STARTER_MEAL_PLAN,
       });
       captureConversion("free-meal-plan-quick-optin", {
         email: email.trim(),
@@ -882,6 +907,32 @@ function PackagesPage({setPage,showToast}){
             }
           }}>
             🔒 {p.consult?"Pay & Book Consult":"Pay Securely with Stripe"}
+          </button>
+          <button className="btn btn-full btn-ol" style={{marginTop:8}} onClick={async()=>{
+            const splitAmount=Math.ceil(p.price/2);
+            captureConversion("package-checkout-click", {
+              package: p.name,
+              payment_mode: "split",
+              value: String(splitAmount),
+              monthly_value: String(p.price),
+            }).catch(console.error);
+            try{
+              showToast("Redirecting to split payment checkout...");
+              await startStripeCheckout({
+                itemKey:p.splitCheckoutKey,
+                metadata:{
+                  package:p.name,
+                  payment_mode:"split",
+                  value:String(splitAmount),
+                  monthly_value:String(p.price),
+                },
+              });
+            }catch(error){
+              console.error(error);
+              showToast(error.message||"Split payment checkout is not ready yet.");
+            }
+          }}>
+            Split Payment · Pay ${Math.ceil(p.price/2).toLocaleString()} Today
           </button>
           <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:6,flexWrap:"wrap"}}>
             {["Visa","MC","Amex","Apple Pay"].map(c=>(
@@ -2675,11 +2726,15 @@ function StreakCounter({streak=7,habits=5,checkins=12}){
 // 1. Go to dashboard.stripe.com and log in
 // 2. Create Products + Prices for each checkout item:
 //    - "GRIND Monthly Subscription" (recurring, $480/month)
+//    - "GRIND Split Payment" (one-time, first half)
 //    - "HUSTLE Monthly Subscription" (recurring, $550/month)
+//    - "HUSTLE Split Payment" (one-time, first half)
 //    - "EMPIRE Monthly Subscription" (recurring, $1,500/month)
+//    - "EMPIRE Split Payment" (one-time, first half)
 // 3. Copy each Stripe Price ID and add it to Netlify environment variables:
 //    STRIPE_SECRET_KEY, STRIPE_PRICE_GRIND, STRIPE_PRICE_HUSTLE,
-//    STRIPE_PRICE_EMPIRE
+//    STRIPE_PRICE_EMPIRE, STRIPE_PRICE_GRIND_SPLIT,
+//    STRIPE_PRICE_HUSTLE_SPLIT, STRIPE_PRICE_EMPIRE_SPLIT
 // 4. Stripe automatically handles card storage, receipts, and recurring billing.
 // NOTE: Stripe charges 2.9% + $0.30 per transaction
 
@@ -2956,7 +3011,20 @@ function MealPlanGeneratorPage({showToast}){
       return;
     }
 
-    generatePlanHTML(goal,diet,name);
+    const meals=generatePlanHTML(goal,diet,name);
+    try{
+      await sendMealPlanEmail({
+        name: name.trim(),
+        email: email.trim(),
+        goal: goals[goal].label,
+        diet: diets[diet].label,
+        meals,
+      });
+    }catch(e){
+      console.error(e);
+      showToast(e.message||"Meal plan email could not be sent. Try again.");
+      return;
+    }
     setGenerated(true);
     showToast("Meal plan generated! Check your email.");
   };
