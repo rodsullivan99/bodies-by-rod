@@ -3065,7 +3065,7 @@ function SessionsPage({setPage,showToast}){
     online:{
       name:"Online 1-on-1",
       icon:"💻",
-      price:45,
+      price:60,
       singleCheckoutKey:"session_online_single",
       monthlyCheckoutKeys:{ "1x":"session_online_1x", "2x":"session_online_2x", "3x":"session_online_3x", "4x":"session_online_4x" },
       desc:"FaceTime, Zoom, or Google Meet — train from anywhere",
@@ -3095,10 +3095,10 @@ function SessionsPage({setPage,showToast}){
   };
 
   const frequencyOptions=[
-    {val:"1x",label:"1x per week",sessions:4,monthlyTotal:180},
-    {val:"2x",label:"2x per week",sessions:8,monthlyTotal:360},
-    {val:"3x",label:"3x per week",sessions:12,monthlyTotal:540},
-    {val:"4x",label:"4x per week",sessions:16,monthlyTotal:720},
+    {val:"1x",label:"1x per week",sessions:4},
+    {val:"2x",label:"2x per week",sessions:8},
+    {val:"3x",label:"3x per week",sessions:12},
+    {val:"4x",label:"4x per week",sessions:16},
   ];
 
   const current=sessions[sessionType];
@@ -3248,7 +3248,7 @@ function SessionsPage({setPage,showToast}){
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14,marginBottom:18}}>
         {[
-          {id:"online",name:"Online 1-on-1",icon:"💻",price:"$45/session",desc:"FaceTime, Zoom, or Google Meet",color:"rgba(212,168,67,0.15)",accent:"var(--gold)"},
+          {id:"online",name:"Online 1-on-1",icon:"💻",price:"$60/session",desc:"FaceTime, Zoom, or Google Meet",color:"rgba(212,168,67,0.15)",accent:"var(--gold)"},
           {id:"inperson",name:"In-Person 1-on-1",icon:"🏋️",price:"$60/session",desc:"At the gym or your location",color:"rgba(232,25,44,0.15)",accent:"var(--red)"},
           {id:"checkin",name:"Strategy Check-In",icon:"📞",price:"$30/session",desc:"30 min phone accountability call",color:"rgba(34,197,94,0.15)",accent:"var(--green)"},
         ].map(s=>(
