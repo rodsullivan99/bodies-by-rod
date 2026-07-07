@@ -24,6 +24,19 @@ const captureConversion = async (stage, fields = {}) => {
   });
 };
 
+const startStripeCheckout = async ({ itemKey, email, metadata = {} }) => {
+  const response = await fetch("/api/create-checkout-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ itemKey, email, metadata }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.url) {
+    throw new Error(data.error || "Stripe checkout could not start");
+  }
+  window.location.href = data.url;
+};
+
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Oswald:wght@300;400;500;600;700&family=Barlow:wght@300;400;500&display=swap');
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -306,23 +319,16 @@ input,textarea,select{-webkit-appearance:none;}
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const PACKAGES=[
-  {tier:"Foundation",name:"GRIND",price:480,feat:false,consult:true,split:240,
-   stripeLink:"https://buy.stripe.com/YOUR_GRIND_LINK",
-   stripeSplitLink:"https://buy.stripe.com/YOUR_GRIND_SPLIT_LINK",
+  {tier:"Foundation",name:"GRIND",price:480,feat:false,consult:true,checkoutKey:"grind_full",
    desc:"Transformation essentials. Custom programs, meal prep, weekly accountability.",
    items:["Custom Monthly Workout","AI Meal Plan","Weekly Check-ins","Video Library","10 Meal Preps/Month","$75 Consult Included"]},
-  {tier:"Most Popular",name:"HUSTLE",price:550,feat:true,badge:"BEST VALUE",consult:true,split:275,
-   stripeLink:"https://buy.stripe.com/YOUR_HUSTLE_LINK",
-   stripeSplitLink:"https://buy.stripe.com/YOUR_HUSTLE_SPLIT_LINK",
+  {tier:"Most Popular",name:"HUSTLE",price:550,feat:true,badge:"BEST VALUE",consult:true,checkoutKey:"hustle_full",
    desc:"Fitness + business. Get in shape and start earning from fitness.",
    items:["Everything in Grind","Trainer Certification","Client Templates","Lead Gen Training","Monthly 1-on-1 Call","$75 Consult Included"]},
-  {tier:"Elite",name:"EMPIRE",price:1500,feat:false,split:750,
-   stripeLink:"https://buy.stripe.com/YOUR_EMPIRE_LINK",
-   stripeSplitLink:"https://buy.stripe.com/YOUR_EMPIRE_SPLIT_LINK",
+  {tier:"Elite",name:"EMPIRE",price:1500,feat:false,checkoutKey:"empire_full",
    desc:"The full system. Body, brand, certification, real clients, real leads.",
    items:["Everything in Hustle","Weekly 1-on-1 Coaching","Real Leads Monthly","Revenue Share","Custom Brand Kit","Mentorship Under Rod"]},
 ];
-const STRIPE_CONSULT="https://buy.stripe.com/YOUR_CONSULT_LINK";
 const TRANSFORMS=[
   {name:"Marcus T.",result:"Lost 38 lbs — 90 days",pkg:"HUSTLE",b:"😐",a:"🔥",t:"90 days"},
   {name:"DeShawn R.",result:"Gained 18 lbs muscle",pkg:"EMPIRE",b:"😤",a:"⚡",t:"4 months"},
@@ -413,7 +419,7 @@ const BLOG_POSTS=[
 ];
 
 // ─── AI PROMPTS ───────────────────────────────────────────────────────────────
-const Q_PROMPT=`You are the intake AI for Bodies by Rod. Qualify leads for GRIND $480/mo, HUSTLE $550/mo, EMPIRE $1,500/mo. $75 consult available. Split payments available.
+const Q_PROMPT=`You are the intake AI for Bodies by Rod. Qualify leads for GRIND $480/mo, HUSTLE $550/mo, EMPIRE $1,500/mo. $75 consult available. Package checkout is available through Stripe.
 2-4 sentences max. ONE question. Direct, bold, street energy.
 Ask: 1) Main goal. 2) Readiness to invest. 3) Timeline. 4) What stopped them. 5) Mover or waiter.
 Also factor in health readiness. If they mention recent surgery, medical restrictions, chest pain, fainting, uncontrolled blood pressure, pregnancy/postpartum concerns, serious injury, or no doctor clearance when clearance is needed, do not clear them for training until they speak with a medical professional.
@@ -441,6 +447,23 @@ export default function App(){
   const [page,setPage]=useState("home");
   const [toast,setToast]=useState(null);
   const showToast=(msg)=>{setToast(msg);setTimeout(()=>setToast(null),4000);};
+
+  useEffect(()=>{
+    const params=new URLSearchParams(window.location.search);
+    const checkout=params.get("checkout");
+    if(!checkout)return;
+
+    if(checkout==="success"){
+      setPage("book");
+      showToast("Payment received. Choose a time or watch your email for the next step.");
+    }
+    if(checkout==="cancelled"){
+      setPage("packages");
+      showToast("Checkout cancelled. No payment was taken.");
+    }
+
+    window.history.replaceState({}, "", window.location.pathname);
+  },[]);
 
   const pages=[
     ["home","Home"],["consult","$75 Consult"],["packages","Packages"],["compare","Compare"],
@@ -707,10 +730,8 @@ function ConsultPage({setPage,showToast}){
       goal: goal.trim(),
       value: "75",
     }).catch(console.error);
-    // Open Stripe checkout
-    window.open(STRIPE_CONSULT,"_blank");
     setDone(true);
-    showToast("Redirecting to secure checkout...");
+    showToast("Consult request saved. Rod will follow up with payment details.");
   };
 
   if(done)return(<div className="sec" style={{maxWidth:480,margin:"0 auto"}}>
@@ -718,9 +739,9 @@ function ConsultPage({setPage,showToast}){
       <div style={{fontSize:44,marginBottom:10}}>✅</div>
       <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:24,color:"var(--red)",marginBottom:7}}>PAYMENT COMPLETE</div>
       <div style={{fontSize:13,color:"var(--mut)",lineHeight:1.85,marginBottom:18}}>
-        Rod will reach out within 24 hours to schedule your call.<br/>
+        Rod will reach out within 24 hours to schedule your call and collect the consult fee.<br/>
         <strong style={{color:"var(--w)"}}>Your $75 is fully credited when you join any package.</strong><br/>
-        <span style={{color:"var(--gold)"}}>Check your email for your receipt from Stripe.</span>
+        <span style={{color:"var(--gold)"}}>Package checkout is available now through Stripe.</span>
       </div>
       <button className="btn" onClick={()=>setPage("packages")}>View Packages</button>
     </div></div>
@@ -810,45 +831,26 @@ function ConsultPage({setPage,showToast}){
 
 // ─── PACKAGES ─────────────────────────────────────────────────────────────────
 function PackagesPage({setPage,showToast}){
-  const [payMode,setPayMode]=useState({});
   return(<div className="sec" style={{maxWidth:960}}>
     <div className="stag">Pricing</div><h2 className="sh2">ALL IN.<br/>YOUR WAY.</h2>
-    <p className="sbody">Three tiers. Pay full or split it in two payments every other week. Everything included.</p>
+    <p className="sbody">Three tiers. Pick your package and check out securely through Stripe. Everything included.</p>
     <div style={{background:"rgba(212,168,67,0.05)",border:"1px solid rgba(212,168,67,0.14)",borderRadius:3,padding:"13px 16px",marginBottom:20,display:"flex",alignItems:"flex-start",gap:11}}>
       <div style={{fontSize:18,flexShrink:0}}>💳</div>
       <div>
-        <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:2,color:"var(--gold)",textTransform:"uppercase",marginBottom:3}}>Split Payment Available on All Packages</div>
-        <div style={{fontSize:12,color:"var(--mut)",fontWeight:300,lineHeight:1.65}}>Pay half now, other half in 2 weeks. Full payment = instant access. Your choice.</div>
+        <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:2,color:"var(--gold)",textTransform:"uppercase",marginBottom:3}}>Secure Stripe Checkout</div>
+        <div style={{fontSize:12,color:"var(--mut)",fontWeight:300,lineHeight:1.65}}>GRIND, HUSTLE, and EMPIRE use the package Price IDs from your Stripe account.</div>
       </div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(270px,1fr))",gap:14}}>
       {PACKAGES.map((p,i)=>{
-        const mode=payMode[p.name]||"full";
-        const split=p.split;
         return(<div key={i} className={`pkg ${p.feat?"feat":""}`}>
           {p.badge&&<div className="pbadge">{p.badge}</div>}
           <div style={{fontFamily:"'Oswald',sans-serif",fontSize:10,letterSpacing:4,textTransform:"uppercase",color:"var(--red)",marginBottom:5}}>{p.tier}</div>
           <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:22,color:"var(--w)",marginBottom:2}}>{p.name}</div>
-          <div style={{display:"flex",gap:6,margin:"10px 0"}}>
-            {["full","split"].map(m=>(
-              <button key={m} onClick={()=>setPayMode(pm=>({...pm,[p.name]:m}))}
-                style={{flex:1,padding:"7px 6px",border:`1px solid ${mode===m?"var(--red)":"var(--bdr)"}`,background:mode===m?"rgba(232,25,44,0.08)":"transparent",color:mode===m?"var(--w)":"var(--mut)",fontFamily:"'Oswald',sans-serif",fontSize:10,letterSpacing:2,textTransform:"uppercase",cursor:"pointer",borderRadius:2,transition:"all 0.2s"}}>
-                {m==="full"?"Full Pay":"Split Pay"}
-              </button>
-            ))}
+          <div style={{marginBottom:3}}>
+            <span style={{fontFamily:"'Oswald',sans-serif",fontSize:30,fontWeight:700,color:"var(--w)"}}><sup style={{fontSize:14,verticalAlign:"top",marginTop:8,display:"inline-block"}}>$</sup>{p.price.toLocaleString()}</span>
+            <div style={{fontSize:11,color:"var(--mut)",fontWeight:300}}>/month · secure Stripe checkout</div>
           </div>
-          {mode==="full"?(
-            <div style={{marginBottom:3}}>
-              <span style={{fontFamily:"'Oswald',sans-serif",fontSize:30,fontWeight:700,color:"var(--w)"}}><sup style={{fontSize:14,verticalAlign:"top",marginTop:8,display:"inline-block"}}>$</sup>{p.price.toLocaleString()}</span>
-              <div style={{fontSize:11,color:"var(--mut)",fontWeight:300}}>/month · paid in full</div>
-            </div>
-          ):(
-            <div style={{marginBottom:3}}>
-              <span style={{fontFamily:"'Oswald',sans-serif",fontSize:30,fontWeight:700,color:"var(--w)"}}><sup style={{fontSize:14,verticalAlign:"top",marginTop:8,display:"inline-block"}}>$</sup>{split.toLocaleString()}</span>
-              <div style={{fontSize:11,color:"var(--mut)",fontWeight:300}}>now · then ${split.toLocaleString()} in 2 weeks</div>
-              <div style={{fontSize:10,color:"var(--gold)",fontFamily:"'Oswald',sans-serif",letterSpacing:1,marginTop:1}}>= ${p.price.toLocaleString()}/mo total</div>
-            </div>
-          )}
           {p.consult&&<div style={{background:"rgba(212,168,67,0.07)",border:"1px solid rgba(212,168,67,0.16)",borderRadius:2,padding:"5px 9px",fontSize:10,color:"var(--gold)",fontFamily:"'Oswald',sans-serif",letterSpacing:1,margin:"8px 0",display:"inline-flex",alignItems:"center",gap:5}}>✦ Includes $75 Consultation</div>}
           <div style={{fontSize:11,color:"var(--mut)",lineHeight:1.65,margin:"8px 0 12px",fontWeight:300}}>{p.desc}</div>
           <ul style={{listStyle:"none",marginBottom:16}}>{p.items.map((f,j)=>(
@@ -856,16 +858,28 @@ function PackagesPage({setPage,showToast}){
               <span style={{color:"var(--red)",fontSize:11,flexShrink:0}}>✓</span>{f}
             </li>
           ))}</ul>
-          <button className={`btn btn-full ${p.feat?"":"btn-ol"}`} onClick={()=>{
-            const link=mode==="split"?p.stripeSplitLink:p.stripeLink;
+          <button className={`btn btn-full ${p.feat?"":"btn-ol"}`} onClick={async()=>{
             captureConversion("package-checkout-click", {
               package: p.name,
-              payment_mode: mode,
-              value: String(mode==="split"?p.split:p.price),
+              payment_mode: "monthly",
+              value: String(p.price),
               monthly_value: String(p.price),
             }).catch(console.error);
-            window.open(link,"_blank");
-            showToast("Redirecting to secure Stripe checkout...");
+            try{
+              showToast("Redirecting to secure Stripe checkout...");
+              await startStripeCheckout({
+                itemKey:p.checkoutKey,
+                metadata:{
+                  package:p.name,
+                  payment_mode:"monthly",
+                  value:String(p.price),
+                  monthly_value:String(p.price),
+                },
+              });
+            }catch(error){
+              console.error(error);
+              showToast(error.message||"Stripe checkout is not ready yet.");
+            }
           }}>
             🔒 {p.consult?"Pay & Book Consult":"Pay Securely with Stripe"}
           </button>
@@ -2065,7 +2079,7 @@ function AdminPage({showToast}){
     {tab==="leads"&&(<div className="card"><div className="card-hdr"><span className="card-title">Qualified Leads</span></div>
       <div className="card-body">
         {[{name:"Jordan M.",status:"Hot",pkg:"EMPIRE",date:"Today",note:"Ready to move"},
-          {name:"Tasha W.",status:"Warm",pkg:"HUSTLE",date:"Yesterday",note:"Considering split pay"},
+          {name:"Tasha W.",status:"Warm",pkg:"HUSTLE",date:"Yesterday",note:"Asked about monthly package checkout"},
           {name:"Chris B.",status:"Hot",pkg:"EMPIRE",date:"May 15",note:"Already certified"},
           {name:"Nikki J.",status:"Pending",pkg:"GRIND",date:"May 13",note:"First timer"},
         ].map((l,i)=>(<div key={i} className="row-item">
@@ -2657,26 +2671,16 @@ function StreakCounter({streak=7,habits=5,checkins=12}){
 }
 
 // ─── STRIPE SETUP GUIDE (visible in admin) ────────────────────────────────────
-// HOW TO CONNECT YOUR REAL STRIPE LINKS:
+// HOW TO CONNECT YOUR REAL STRIPE PRICES:
 // 1. Go to dashboard.stripe.com and log in
-// 2. Click "Payment Links" in the left menu
-// 3. Create a new payment link for each product:
-//    - "$75 Strategy Consultation" (one-time, $75)
+// 2. Create Products + Prices for each checkout item:
 //    - "GRIND Monthly Subscription" (recurring, $480/month)
-//    - "GRIND Split Pay 1" (one-time, $240) + "GRIND Split Pay 2" (one-time, $240)
 //    - "HUSTLE Monthly Subscription" (recurring, $550/month)
-//    - "HUSTLE Split Pay 1" (one-time, $275) + "HUSTLE Split Pay 2" (one-time, $275)
 //    - "EMPIRE Monthly Subscription" (recurring, $1,500/month)
-//    - "EMPIRE Split Pay 1" (one-time, $750) + "EMPIRE Split Pay 2" (one-time, $750)
-// 4. Copy each payment link URL
-// 5. Open this file (App.jsx) and replace each placeholder:
-//    STRIPE_CONSULT = your $75 consult link
-//    GRIND stripeLink = your GRIND monthly link
-//    GRIND stripeSplitLink = your GRIND split link
-//    HUSTLE stripeLink = your HUSTLE monthly link
-//    etc.
-// 6. Stripe automatically handles card storage, receipts, and recurring billing
-// 7. You get paid directly to your Stripe account (connects to your bank)
+// 3. Copy each Stripe Price ID and add it to Netlify environment variables:
+//    STRIPE_SECRET_KEY, STRIPE_PRICE_GRIND, STRIPE_PRICE_HUSTLE,
+//    STRIPE_PRICE_EMPIRE
+// 4. Stripe automatically handles card storage, receipts, and recurring billing.
 // NOTE: Stripe charges 2.9% + $0.30 per transaction
 
 // ─── SESSIONS PAGE — PER SESSION PRICING ─────────────────────────────────────
@@ -2860,7 +2864,7 @@ function SessionsPage({setPage,showToast}){
           <strong style={{color:"var(--w)"}}>{current.name}</strong><br/>
           {freqData.sessions} sessions per month<br/>
           <strong style={{color:current.color}}>${monthlyTotal}/month</strong><br/>
-          <span style={{fontSize:10,marginTop:6,display:"block"}}>You will be redirected to Stripe to complete payment</span>
+          <span style={{fontSize:10,marginTop:6,display:"block"}}>Rod will confirm your schedule and payment details.</span>
         </div>
         <button className="btn btn-full" onClick={()=>{
           captureConversion("session-package-checkout-click", {
@@ -2872,14 +2876,15 @@ function SessionsPage({setPage,showToast}){
             sessions_per_month: String(freqData.sessions),
             monthly_value: String(monthlyTotal),
           }).catch(console.error);
-          window.open("https://buy.stripe.com/YOUR_SESSION_LINK","_blank");showToast("Opening secure checkout...");
+          showToast("Session request saved. Pick a time on the booking calendar.");
+          setPage("book");
         }} style={{background:current.color,marginBottom:8}}>
-          🔒 Pay ${monthlyTotal}/month with Stripe
+          Continue to Booking
         </button>
         <button className="btn btn-ol btn btn-sm" onClick={()=>setStep(2)}>← Change Details</button>
         <div style={{fontSize:9,color:"var(--mut)",marginTop:10,lineHeight:1.6}}>
-          First payment processed immediately · Recurring every month<br/>
-          Cancel anytime with 7 days notice
+          Payment is handled after Rod confirms your session setup.<br/>
+          Package checkout remains available through Stripe.
         </div>
       </div>
     </div>)}
