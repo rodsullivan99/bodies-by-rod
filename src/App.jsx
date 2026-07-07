@@ -359,6 +359,14 @@ input,textarea,select{-webkit-appearance:none;}
 .rec-card{background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.18);border-radius:3px;padding:13px 14px;display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;}
 .rec-name{font-family:'Black Han Sans',sans-serif;font-size:24px;color:var(--green);line-height:1;}
 .proof-note{margin-top:12px;background:rgba(232,25,44,0.06);border:1px solid rgba(232,25,44,0.16);border-radius:3px;padding:12px 14px;font-size:11px;color:var(--mut);line-height:1.7;}
+.start-ladder{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:0 0 18px;}
+.ladder-card{background:var(--g1);border:1px solid var(--bdr);border-radius:4px;padding:15px;position:relative;overflow:hidden;min-height:178px;}
+.ladder-card.featured{border-color:rgba(34,197,94,0.34);background:linear-gradient(150deg,rgba(34,197,94,0.08),var(--g1));}
+.ladder-kicker{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+.ladder-name{font-family:'Black Han Sans',sans-serif;font-size:22px;color:var(--w);line-height:1;margin-bottom:7px;}
+.ladder-price{font-family:'Oswald',sans-serif;font-size:13px;color:var(--green);font-weight:700;letter-spacing:1px;margin-bottom:8px;}
+.ladder-copy{font-size:11px;color:var(--mut);line-height:1.65;font-weight:300;}
+.ladder-tag{position:absolute;right:10px;bottom:10px;font-family:'Oswald',sans-serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);border:1px solid var(--bdr);border-radius:2px;padding:3px 6px;background:rgba(240,235,227,0.03);}
 .faq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;}
 .faq-item{background:var(--g1);border:1px solid var(--bdr);border-radius:3px;padding:14px;}
 .faq-item strong{display:block;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:1px;color:var(--w);margin-bottom:6px;}
@@ -3118,6 +3126,12 @@ function SessionsPage({setPage,showToast}){
     return {mode:"monthly",frequency:"1x",name:"1x Per Week",price:current.price*4,copy:"Best starter plan for someone who wants weekly structure, lower commitment, and a clear path to upgrade."};
   };
   const sessionRec=getSessionRec();
+  const starterLadder=[
+    {kicker:"Lowest Risk",name:"One Session",price:`$${current.price}`,copy:"Best when the client wants to meet Rod, feel the coaching style, and decide after one paid session.",tag:"Try Rod"},
+    {kicker:"Easy Start",name:"1x Weekly",price:`$${current.price*4}/mo`,copy:"Best for someone who needs a weekly appointment, form checks, and a lower-commitment way to start.",tag:"4/mo",featured:frequency==="1x"},
+    {kicker:"Steady Change",name:"2x Weekly",price:`$${current.price*8}/mo`,copy:"Best balance for body change because Rod sees the client often enough to correct effort and consistency.",tag:"8/mo",featured:frequency==="2x"},
+    {kicker:"Fast Correction",name:"3x Weekly",price:`$${current.price*12}/mo`,copy:"Best for serious clients who want more hands-on coaching, tighter accountability, and faster adjustments.",tag:"12/mo",featured:frequency==="3x"},
+  ];
   const applySessionRec=()=>{
     if(sessionRec.mode==="monthly")setFrequency(sessionRec.frequency);
     showToast(`${sessionRec.name} selected as the best starting point.`);
@@ -3216,6 +3230,18 @@ function SessionsPage({setPage,showToast}){
           </div>
           <button className="btn btn-green" onClick={applySessionRec}>{sessionRec.mode==="single"?"Book One":"Use This Plan"} · ${sessionRec.price}</button>
         </div>
+      </div>
+
+      <div className="start-ladder">
+        {starterLadder.map(item=>(
+          <div key={item.name} className={`ladder-card ${item.featured?"featured":""}`}>
+            <div className="ladder-kicker">{item.kicker}</div>
+            <div className="ladder-name">{item.name}</div>
+            <div className="ladder-price">{item.price}</div>
+            <div className="ladder-copy">{item.copy}</div>
+            <div className="ladder-tag">{item.tag}</div>
+          </div>
+        ))}
       </div>
 
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14,marginBottom:18}}>
