@@ -327,6 +327,43 @@ input,textarea,select{-webkit-appearance:none;}
 .ai-close{background:none;border:1px solid var(--bdr);color:var(--mut);width:24px;height:24px;border-radius:2px;cursor:pointer;}
 .ai-close:hover{color:var(--w);border-color:var(--red);}
 .ai-panel .ch-msgs{height:250px;}
+
+/* SELF-LIQUIDATING FLOW */
+.path-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;align-items:stretch;}
+.path-panel{background:linear-gradient(145deg,rgba(232,25,44,0.08),rgba(20,20,20,0.96));border:1px solid rgba(232,25,44,0.24);border-radius:4px;padding:20px;position:relative;overflow:hidden;}
+.path-panel:before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(212,168,67,0.08),transparent 34%,rgba(232,25,44,0.08));pointer-events:none;}
+.path-panel>*{position:relative;}
+.path-title{font-family:'Black Han Sans',sans-serif;font-size:clamp(28px,6vw,54px);line-height:.92;color:var(--w);margin:4px 0 10px;}
+.path-copy{font-size:13px;line-height:1.85;color:var(--mut);font-weight:300;max-width:680px;}
+.start-options{display:grid;gap:9px;margin-top:18px;}
+.start-card{border:1px solid var(--bdr);background:rgba(240,235,227,0.03);border-radius:3px;padding:13px 14px;text-align:left;color:var(--w);cursor:pointer;transition:transform .18s ease,border-color .18s ease,background .18s ease;}
+.start-card:hover{transform:translateY(-2px);border-color:rgba(212,168,67,0.34);background:rgba(212,168,67,0.05);}
+.start-card strong{display:block;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:4px;}
+.start-card span{font-size:11px;line-height:1.6;color:var(--mut);}
+.rod-card{background:var(--g1);border:1px solid var(--bdr);border-radius:4px;padding:20px;display:grid;gap:13px;}
+.rod-mark{width:64px;height:64px;border-radius:50%;background:linear-gradient(145deg,var(--red),#7b0f18);display:flex;align-items:center;justify-content:center;font-family:'Black Han Sans',sans-serif;font-size:26px;color:#fff;box-shadow:0 14px 32px rgba(232,25,44,0.18);}
+.rod-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.rod-stat{background:rgba(240,235,227,0.03);border:1px solid var(--bdr);border-radius:3px;padding:10px 8px;text-align:center;}
+.rod-num{font-family:'Oswald',sans-serif;font-size:16px;color:var(--w);font-weight:700;}
+.rod-lbl{font-size:9px;color:var(--mut);text-transform:uppercase;letter-spacing:1px;margin-top:2px;}
+.flow-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;}
+.flow-step{background:var(--g1);border:1px solid var(--bdr);border-radius:3px;padding:15px;position:relative;min-height:132px;}
+.flow-num{font-family:'Black Han Sans',sans-serif;font-size:28px;color:rgba(232,25,44,0.65);line-height:1;margin-bottom:8px;}
+.flow-step strong{display:block;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--w);margin-bottom:6px;}
+.flow-step span{font-size:11px;color:var(--mut);line-height:1.65;font-weight:300;}
+.quiz-box{background:linear-gradient(145deg,rgba(212,168,67,0.07),rgba(20,20,20,0.98));border:1px solid rgba(212,168,67,0.18);border-radius:4px;padding:18px;}
+.quiz-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:14px 0;}
+.quiz-choice{border:1px solid var(--bdr);background:rgba(240,235,227,0.03);border-radius:3px;padding:12px;text-align:left;color:var(--mut);cursor:pointer;font-size:11px;line-height:1.55;transition:border-color .18s ease,background .18s ease,color .18s ease;}
+.quiz-choice.on,.quiz-choice:hover{border-color:rgba(212,168,67,0.42);background:rgba(212,168,67,0.07);color:var(--w);}
+.quiz-choice strong{display:block;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:3px;}
+.rec-card{background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.18);border-radius:3px;padding:13px 14px;display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;}
+.rec-name{font-family:'Black Han Sans',sans-serif;font-size:24px;color:var(--green);line-height:1;}
+.proof-note{margin-top:12px;background:rgba(232,25,44,0.06);border:1px solid rgba(232,25,44,0.16);border-radius:3px;padding:12px 14px;font-size:11px;color:var(--mut);line-height:1.7;}
+.faq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;}
+.faq-item{background:var(--g1);border:1px solid var(--bdr);border-radius:3px;padding:14px;}
+.faq-item strong{display:block;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:1px;color:var(--w);margin-bottom:6px;}
+.faq-item span{font-size:11px;color:var(--mut);line-height:1.7;font-weight:300;}
+@media(max-width:760px){.path-grid{grid-template-columns:1fr}.rod-stat-grid{grid-template-columns:1fr 1fr 1fr}.rec-card{align-items:flex-start}.rec-name{font-size:21px}}
 `;
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
@@ -359,6 +396,47 @@ const REVIEWS=[
   {name:"Tanisha W.",stars:5,text:"Certified trainer now with 4 clients under me. Templates, leads, full game plan. Not a regular program.",pkg:"EMPIRE",date:"1 month ago"},
   {name:"Keisha M.",stars:5,text:"Daily check-ins kept me locked in. Lost 14 lbs first month. Rod actually responds to every check-in.",pkg:"GRIND",date:"1 month ago"},
   {name:"Chris B.",stars:5,text:"Split payment made it easy to start. The habit tracker alone changed my consistency.",pkg:"HUSTLE",date:"1 month ago"},
+];
+const START_PATHS=[
+  {id:"body",title:"I want my body handled",copy:"Fat loss, muscle, structure, meals, and weekly accountability.",page:"mealgen"},
+  {id:"coach",title:"I need coaching and pressure",copy:"You know what to do, but you need Rod watching the details.",page:"consult"},
+  {id:"business",title:"I want the trainer/business lane",copy:"Certification, templates, leads, and a real path to earning.",page:"packages"},
+];
+const ROD_STATS=[
+  ["10+","Years Training"],
+  ["Certified","Trainer"],
+  ["Direct","Accountability"],
+];
+const HOW_IT_WORKS=[
+  ["01","Pick your lane","Start with the free meal plan, the $75 consult, or the package that matches your goal."],
+  ["02","Get the plan","Rod maps out training, food, check-ins, and the next move based on where you are now."],
+  ["03","Work the system","You train, eat with purpose, check in, and adjust instead of guessing every week."],
+  ["04","Scale the result","Lock in the body first, then use referrals, meal prep, or trainer tools to lower cost and create upside."],
+];
+const QUIZ_OPTIONS={
+  goal:[
+    {id:"body",label:"Body transformation",copy:"Lose fat, build muscle, get structure."},
+    {id:"coach",label:"Accountability",copy:"I need pressure, check-ins, and correction."},
+    {id:"business",label:"Business / trainer",copy:"I want certification, clients, and income skills."},
+  ],
+  budget:[
+    {id:"starter",label:"Start controlled",copy:"I want the lowest monthly entry."},
+    {id:"growth",label:"Best value",copy:"I can invest if the support is stronger."},
+    {id:"elite",label:"Full system",copy:"I want the highest-touch path."},
+  ],
+};
+const PACKAGE_RECS={
+  GRIND:{name:"GRIND",why:"Best fit when you want the body plan, meal structure, and weekly accountability without the business layer.",page:"packages"},
+  HUSTLE:{name:"HUSTLE",why:"Best fit when you want transformation plus trainer/business tools. This is the strongest middle lane.",page:"packages"},
+  EMPIRE:{name:"EMPIRE",why:"Best fit when you want Rod's highest-touch coaching, real leads, mentorship, and the full body-to-business system.",page:"packages"},
+};
+const FAQS=[
+  ["What happens after I sign up?","You get routed into the next step: booking, intake, plan setup, and check-ins so Rod knows exactly where to start."],
+  ["Can beginners join?","Yes. The point is structure. Rod adjusts the plan to your current level, but you still have to be coachable."],
+  ["How does split payment work?","Each package has a full-pay checkout and a split-pay checkout so you can start without paying the full month up front."],
+  ["Is meal prep included?","GRIND, HUSTLE, and EMPIRE include the meal system. R.O.D. Meals can also be ordered when you want food handled for you."],
+  ["How fast do people see results?","Most progress comes from consistency in the first few weeks: meals, training, check-ins, and adjustments. The system is built to remove guessing."],
+  ["How does Rod operate?","Direct, structured, and accountability-heavy. If you disappear, skip check-ins, or freestyle the plan, the result slows down."],
 ];
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -592,6 +670,15 @@ function HomePage({setPage,showToast}){
   const [lmDone,setLmDone]=useState(false);
   const [promo,setPromo]=useState("");
   const [promoMsg,setPromoMsg]=useState("");
+  const [quizGoal,setQuizGoal]=useState("coach");
+  const [quizBudget,setQuizBudget]=useState("growth");
+
+  const getRecommendation=()=>{
+    if(quizGoal==="business"||quizBudget==="elite")return PACKAGE_RECS.EMPIRE;
+    if(quizGoal==="coach"||quizBudget==="growth")return PACKAGE_RECS.HUSTLE;
+    return PACKAGE_RECS.GRIND;
+  };
+  const rec=getRecommendation();
 
   const grabMagnet=async()=>{
     if(!email.trim())return;
@@ -664,6 +751,74 @@ function HomePage({setPage,showToast}){
       ))}
     </div>
 
+    <div className="sec">
+      <div className="stag">Start Here</div><h2 className="sh2">NO GUESSING.<br/>PICK YOUR LANE.</h2>
+      <div className="path-grid">
+        <div className="path-panel">
+          <div className="stag" style={{marginBottom:4}}>New Here?</div>
+          <div className="path-title">THE SITE SHOULD MOVE YOU.</div>
+          <p className="path-copy">If you already know what you want, go straight to checkout. If you are new, start with the lane that sounds like you. Bodies by Rod is built to turn attention into a meal plan, a consult, a package, or a follow-up Rod can act on.</p>
+          <div className="start-options">
+            {START_PATHS.map(path=>(
+              <button key={path.id} className="start-card" onClick={()=>setPage(path.page)}>
+                <strong>{path.title}</strong>
+                <span>{path.copy}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="rod-card">
+          <div className="rod-mark">R</div>
+          <div>
+            <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:3,textTransform:"uppercase",color:"var(--gold)",marginBottom:6}}>About Rod</div>
+            <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:26,lineHeight:1,color:"var(--w)",marginBottom:9}}>CERTIFIED. DIRECT. ACCOUNTABLE.</div>
+            <div style={{fontSize:12,color:"var(--mut)",lineHeight:1.8,fontWeight:300}}>Rod coaches with structure first: training, meals, check-ins, and correction. The style is direct because the goal is simple: stop guessing, execute the plan, and build a body you can maintain.</div>
+          </div>
+          <div className="rod-stat-grid">{ROD_STATS.map(([n,l])=>(
+            <div key={l} className="rod-stat"><div className="rod-num">{n}</div><div className="rod-lbl">{l}</div></div>
+          ))}</div>
+          <button className="btn btn-full btn-gold" onClick={()=>setPage("consult")}>Talk With Rod</button>
+        </div>
+      </div>
+    </div>
+
+    <div className="sec" style={{paddingTop:0}}>
+      <div className="stag">How It Works</div><h2 className="sh2">FROM INTEREST<br/>TO ACTION.</h2>
+      <div className="flow-steps">{HOW_IT_WORKS.map(([num,title,copy])=>(
+        <div key={num} className="flow-step">
+          <div className="flow-num">{num}</div>
+          <strong>{title}</strong>
+          <span>{copy}</span>
+        </div>
+      ))}</div>
+    </div>
+
+    <div className="sec" style={{paddingTop:0}}>
+      <div className="stag">Package Finder</div><h2 className="sh2">LET THE SYSTEM<br/>POINT YOU.</h2>
+      <div className="quiz-box">
+        <div style={{fontFamily:"'Oswald',sans-serif",fontSize:12,letterSpacing:2,textTransform:"uppercase",color:"var(--w)",marginBottom:4}}>What do you need most?</div>
+        <div className="quiz-row">{QUIZ_OPTIONS.goal.map(opt=>(
+          <button key={opt.id} className={`quiz-choice ${quizGoal===opt.id?"on":""}`} onClick={()=>setQuizGoal(opt.id)}>
+            <strong>{opt.label}</strong>{opt.copy}
+          </button>
+        ))}</div>
+        <div style={{fontFamily:"'Oswald',sans-serif",fontSize:12,letterSpacing:2,textTransform:"uppercase",color:"var(--w)",marginBottom:4}}>How aggressive do you want to be?</div>
+        <div className="quiz-row">{QUIZ_OPTIONS.budget.map(opt=>(
+          <button key={opt.id} className={`quiz-choice ${quizBudget===opt.id?"on":""}`} onClick={()=>setQuizBudget(opt.id)}>
+            <strong>{opt.label}</strong>{opt.copy}
+          </button>
+        ))}</div>
+        <div className="rec-card">
+          <div>
+            <div style={{fontSize:10,color:"var(--mut)",fontFamily:"'Oswald',sans-serif",letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Recommended Package</div>
+            <div className="rec-name">{rec.name}</div>
+            <div style={{fontSize:11,color:"var(--mut)",lineHeight:1.65,maxWidth:620,marginTop:5}}>{rec.why}</div>
+          </div>
+          <button className="btn btn-green" onClick={()=>setPage(rec.page)}>See Packages</button>
+        </div>
+      </div>
+    </div>
+
     {/* Promo code */}
     <div className="sec" style={{paddingBottom:0}}>
       <div className="card">
@@ -697,6 +852,7 @@ function HomePage({setPage,showToast}){
           </div>
         </div>
       ))}</div>
+      <div className="proof-note">Next upgrade for this section: replace these placeholders with approved client before/after photos, real reviews, and video proof from the admin dashboard. Every result should show the package, timeline, and what changed.</div>
     </div>
 
     <div className="sec" style={{paddingTop:0}}>
@@ -710,6 +866,17 @@ function HomePage({setPage,showToast}){
         </div>
       ))}</div>
     </div>
+
+    <div className="sec" style={{paddingTop:0}}>
+      <div className="stag">Questions</div><h2 className="sh2">BEFORE YOU<br/>CHECK OUT.</h2>
+      <div className="faq-grid">{FAQS.map(([q,a])=>(
+        <div key={q} className="faq-item">
+          <strong>{q}</strong>
+          <span>{a}</span>
+        </div>
+      ))}</div>
+    </div>
+
     <div className="cta-strip">
       <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:4,color:"rgba(255,255,255,0.6)",marginBottom:6,textTransform:"uppercase"}}>R.O.D. — Ready On Demand</div>
       <div className="cta-h">READY TO CHANGE YOUR LIFE?</div>
