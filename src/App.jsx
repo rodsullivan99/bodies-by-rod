@@ -3044,6 +3044,9 @@ function SessionsPage({setPage,showToast}){
   const [sessionType,setSessionType]=useState("online");
   const [platform,setPlatform]=useState("FaceTime");
   const [frequency,setFrequency]=useState("1x");
+  const [sessionGoal,setSessionGoal]=useState("steady");
+  const [sessionSchedule,setSessionSchedule]=useState("one");
+  const [sessionBudget,setSessionBudget]=useState("low");
   const [name,setName]=useState("");
   const [email,setEmail]=useState("");
   const [step,setStep]=useState(1);
@@ -3091,6 +3094,35 @@ function SessionsPage({setPage,showToast}){
   const current=sessions[sessionType];
   const freqData=frequencyOptions.find(f=>f.val===frequency);
   const monthlyTotal=current.price*freqData.sessions;
+  const sessionFinderOptions={
+    goal:[
+      {id:"try",label:"Test The Fit",copy:"I want one session or a light start before I commit."},
+      {id:"steady",label:"Stay Consistent",copy:"I need weekly coaching, accountability, and form checks."},
+      {id:"change",label:"Change Fast",copy:"I want more hands-on support and faster correction."},
+    ],
+    schedule:[
+      {id:"one",label:"1 Day",copy:"One locked-in training day each week."},
+      {id:"two",label:"2 Days",copy:"Enough rhythm to build momentum."},
+      {id:"three",label:"3+ Days",copy:"I can train often and want tighter coaching."},
+    ],
+    budget:[
+      {id:"low",label:"Lowest Start",copy:"Keep the first step affordable."},
+      {id:"medium",label:"Balanced",copy:"Spend enough to stay accountable."},
+      {id:"high",label:"All In",copy:"Invest for the fastest practical support."},
+    ]
+  };
+  const getSessionRec=()=>{
+    if(sessionGoal==="try")return {mode:"single",frequency:"1x",name:"Buy 1 Session",price:current.price,copy:"Best when someone needs to meet Rod, feel the coaching style, and remove risk before a monthly plan."};
+    if(sessionGoal==="change"||sessionSchedule==="three"||sessionBudget==="high")return {mode:"monthly",frequency:"3x",name:"3x Per Week",price:current.price*12,copy:"Best for faster results because Rod gets more chances to correct training, effort, and consistency."};
+    if(sessionSchedule==="two"||sessionBudget==="medium")return {mode:"monthly",frequency:"2x",name:"2x Per Week",price:current.price*8,copy:"Best middle ground: enough accountability to build momentum without jumping straight into the highest plan."};
+    return {mode:"monthly",frequency:"1x",name:"1x Per Week",price:current.price*4,copy:"Best starter plan for someone who wants weekly structure, lower commitment, and a clear path to upgrade."};
+  };
+  const sessionRec=getSessionRec();
+  const applySessionRec=()=>{
+    if(sessionRec.mode==="monthly")setFrequency(sessionRec.frequency);
+    showToast(`${sessionRec.name} selected as the best starting point.`);
+    setStep(2);
+  };
   const startSessionCheckout=async({mode})=>{
     const isSingle=mode==="single";
     const value=isSingle?current.price:monthlyTotal;
@@ -3155,6 +3187,37 @@ function SessionsPage({setPage,showToast}){
     <p className="sbody">Online or in-person. Buy one session when you want to test the fit, or lock in a weekly rhythm with a monthly session plan.</p>
 
     {step===1&&(<>
+      <div className="quiz-box" style={{marginBottom:18}}>
+        <div style={{fontFamily:"'Oswald',sans-serif",fontSize:12,letterSpacing:2,textTransform:"uppercase",color:"var(--w)",marginBottom:4}}>Find The Right Starting Point</div>
+        <div style={{fontSize:11,color:"var(--mut)",lineHeight:1.7,marginBottom:10}}>Answer three quick questions so the training tab points people to the right first buy.</div>
+        <div className="lbl">Main Goal</div>
+        <div className="quiz-row">{sessionFinderOptions.goal.map(opt=>(
+          <button key={opt.id} className={`quiz-choice ${sessionGoal===opt.id?"on":""}`} onClick={()=>setSessionGoal(opt.id)}>
+            <strong>{opt.label}</strong>{opt.copy}
+          </button>
+        ))}</div>
+        <div className="lbl">Weekly Schedule</div>
+        <div className="quiz-row">{sessionFinderOptions.schedule.map(opt=>(
+          <button key={opt.id} className={`quiz-choice ${sessionSchedule===opt.id?"on":""}`} onClick={()=>setSessionSchedule(opt.id)}>
+            <strong>{opt.label}</strong>{opt.copy}
+          </button>
+        ))}</div>
+        <div className="lbl">Budget Comfort</div>
+        <div className="quiz-row">{sessionFinderOptions.budget.map(opt=>(
+          <button key={opt.id} className={`quiz-choice ${sessionBudget===opt.id?"on":""}`} onClick={()=>setSessionBudget(opt.id)}>
+            <strong>{opt.label}</strong>{opt.copy}
+          </button>
+        ))}</div>
+        <div className="rec-card">
+          <div>
+            <div style={{fontSize:10,color:"var(--mut)",fontFamily:"'Oswald',sans-serif",letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Recommended Start</div>
+            <div className="rec-name">{sessionRec.name}</div>
+            <div style={{fontSize:11,color:"var(--mut)",lineHeight:1.65,maxWidth:620,marginTop:5}}>{sessionRec.copy}</div>
+          </div>
+          <button className="btn btn-green" onClick={applySessionRec}>{sessionRec.mode==="single"?"Book One":"Use This Plan"} · ${sessionRec.price}</button>
+        </div>
+      </div>
+
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14,marginBottom:18}}>
         {[
           {id:"online",name:"Online 1-on-1",icon:"💻",price:"$45/session",desc:"FaceTime, Zoom, or Google Meet",color:"rgba(212,168,67,0.15)",accent:"var(--gold)"},
@@ -3168,6 +3231,10 @@ function SessionsPage({setPage,showToast}){
             <div style={{fontSize:11,color:"var(--mut)",lineHeight:1.7}}>{s.desc}</div>
           </div>
         ))}
+      </div>
+
+      <div className="proof-note" style={{marginBottom:18}}>
+        Strongest path: use one session when the client is unsure, 1x/week when they need a low-friction start, 2x/week for steady body change, and 3x/week when they want faster correction. Add approved before/after photos or short video reviews here as soon as Rod has the client permission to publish them.
       </div>
 
       <div style={{background:"var(--g2)",border:"1px solid var(--bdr)",borderRadius:4,padding:16}}>
