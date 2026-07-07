@@ -3029,7 +3029,7 @@ function StreakCounter({streak=7,habits=5,checkins=12}){
 //    - "EMPIRE Weekly Subscription" (recurring, $375/week)
 //    - "EMPIRE Split Payment" (one-time, first half)
 //    - Single session prices for online, in-person, and strategy check-in
-//    - Recurring 2x, 3x, and 4x weekly session plans for each session type
+//    - Recurring 1x, 2x, 3x, and 4x weekly session plans for each session type
 // 3. Copy each Stripe Price ID and add it to Netlify environment variables:
 //    STRIPE_SECRET_KEY, STRIPE_PRICE_GRIND, STRIPE_PRICE_HUSTLE,
 //    STRIPE_PRICE_EMPIRE, STRIPE_PRICE_GRIND_WEEKLY, STRIPE_PRICE_HUSTLE_WEEKLY,
@@ -3043,7 +3043,7 @@ function StreakCounter({streak=7,habits=5,checkins=12}){
 function SessionsPage({setPage,showToast}){
   const [sessionType,setSessionType]=useState("online");
   const [platform,setPlatform]=useState("FaceTime");
-  const [frequency,setFrequency]=useState("2x");
+  const [frequency,setFrequency]=useState("1x");
   const [name,setName]=useState("");
   const [email,setEmail]=useState("");
   const [step,setStep]=useState(1);
@@ -3054,7 +3054,7 @@ function SessionsPage({setPage,showToast}){
       icon:"💻",
       price:45,
       singleCheckoutKey:"session_online_single",
-      monthlyCheckoutKeys:{ "2x":"session_online_2x", "3x":"session_online_3x", "4x":"session_online_4x" },
+      monthlyCheckoutKeys:{ "1x":"session_online_1x", "2x":"session_online_2x", "3x":"session_online_3x", "4x":"session_online_4x" },
       desc:"FaceTime, Zoom, or Google Meet — train from anywhere",
       platforms:["FaceTime","Zoom","Google Meet"],
       color:"var(--gold)"
@@ -3064,7 +3064,7 @@ function SessionsPage({setPage,showToast}){
       icon:"🏋️",
       price:60,
       singleCheckoutKey:"session_inperson_single",
-      monthlyCheckoutKeys:{ "2x":"session_inperson_2x", "3x":"session_inperson_3x", "4x":"session_inperson_4x" },
+      monthlyCheckoutKeys:{ "1x":"session_inperson_1x", "2x":"session_inperson_2x", "3x":"session_inperson_3x", "4x":"session_inperson_4x" },
       desc:"At the gym or your location — hands-on coaching",
       platforms:["Location TBD"],
       color:"var(--red)"
@@ -3074,7 +3074,7 @@ function SessionsPage({setPage,showToast}){
       icon:"📞",
       price:30,
       singleCheckoutKey:"session_checkin_single",
-      monthlyCheckoutKeys:{ "2x":"session_checkin_2x", "3x":"session_checkin_3x", "4x":"session_checkin_4x" },
+      monthlyCheckoutKeys:{ "1x":"session_checkin_1x", "2x":"session_checkin_2x", "3x":"session_checkin_3x", "4x":"session_checkin_4x" },
       desc:"30 min phone call — accountability, adjustments, Q&A",
       platforms:["Phone Call"],
       color:"var(--green)"
@@ -3082,6 +3082,7 @@ function SessionsPage({setPage,showToast}){
   };
 
   const frequencyOptions=[
+    {val:"1x",label:"1x per week",sessions:4,monthlyTotal:180},
     {val:"2x",label:"2x per week",sessions:8,monthlyTotal:360},
     {val:"3x",label:"3x per week",sessions:12,monthlyTotal:540},
     {val:"4x",label:"4x per week",sessions:16,monthlyTotal:720},
@@ -3173,7 +3174,7 @@ function SessionsPage({setPage,showToast}){
         <div style={{fontFamily:"'Oswald',sans-serif",fontSize:10,letterSpacing:2,color:"var(--gold)",marginBottom:10}}>HOW IT WORKS</div>
         {[
           {num:"1",title:"Pick Your Session Type",desc:"Online, in-person, or phone check-in"},
-          {num:"2",title:"Buy One Or Build A Plan",desc:"Pay for one session or choose 2x, 3x, or 4x per week"},
+          {num:"2",title:"Buy One Or Build A Plan",desc:"Pay for one session or choose 1x, 2x, 3x, or 4x per week"},
           {num:"3",title:"Checkout Securely",desc:"Single sessions and monthly plans use Stripe"},
           {num:"4",title:"Book Your Times",desc:"Live calendar — Rod blocks out his availability"},
           {num:"5",title:"Train with Rod",desc:"FaceTime, Zoom, Google Meet, or in person"},
@@ -3219,10 +3220,10 @@ function SessionsPage({setPage,showToast}){
 
           <div style={{marginBottom:16}}>
             <div className="lbl">Or Choose Sessions Per Week</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
               {frequencyOptions.map(f=>(
                 <div key={f.val} onClick={()=>setFrequency(f.val)} style={{padding:12,borderRadius:3,border:frequency===f.val?`2px solid ${current.color}`:"1px solid var(--bdr)",background:frequency===f.val?current.color+"22":"var(--g3)",cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
-                  <div style={{fontFamily:"'Oswald',sans-serif",fontSize:12,color:frequency===f.val?current.color:"var(--mut)",fontWeight:700}}>{f.val}</div>
+                  <div style={{fontFamily:"'Oswald',sans-serif",fontSize:12,color:frequency===f.val?current.color:"var(--mut)",fontWeight:700}}>{f.label}</div>
                   <div style={{fontSize:9,color:"var(--mut)",marginTop:3}}>{f.sessions} sessions/mo</div>
                   <div style={{fontSize:9,color:current.color,fontFamily:"'Oswald',sans-serif",marginTop:3,fontWeight:700}}>${(current.price*f.sessions).toLocaleString()}/mo</div>
                 </div>
