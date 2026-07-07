@@ -403,7 +403,7 @@ const START_PATHS=[
   {id:"business",title:"I want the trainer/business lane",copy:"Certification, templates, leads, and a real path to earning.",page:"packages"},
 ];
 const ROD_STATS=[
-  ["10+","Years Training"],
+  ["5+","Years Training"],
   ["Certified","Trainer"],
   ["Direct","Accountability"],
 ];
