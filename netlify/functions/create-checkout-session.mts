@@ -8,11 +8,26 @@ type CheckoutItem = {
 
 const CHECKOUT_ITEMS: Record<string, CheckoutItem> = {
   grind_full: { priceEnv: "STRIPE_PRICE_GRIND", mode: "subscription" },
+  grind_weekly: { priceEnv: "STRIPE_PRICE_GRIND_WEEKLY", mode: "subscription" },
   grind_split: { priceEnv: "STRIPE_PRICE_GRIND_SPLIT", mode: "payment" },
   hustle_full: { priceEnv: "STRIPE_PRICE_HUSTLE", mode: "subscription" },
+  hustle_weekly: { priceEnv: "STRIPE_PRICE_HUSTLE_WEEKLY", mode: "subscription" },
   hustle_split: { priceEnv: "STRIPE_PRICE_HUSTLE_SPLIT", mode: "payment" },
   empire_full: { priceEnv: "STRIPE_PRICE_EMPIRE", mode: "subscription" },
+  empire_weekly: { priceEnv: "STRIPE_PRICE_EMPIRE_WEEKLY", mode: "subscription" },
   empire_split: { priceEnv: "STRIPE_PRICE_EMPIRE_SPLIT", mode: "payment" },
+  session_online_single: { priceEnv: "STRIPE_PRICE_SESSION_ONLINE_SINGLE", mode: "payment" },
+  session_inperson_single: { priceEnv: "STRIPE_PRICE_SESSION_INPERSON_SINGLE", mode: "payment" },
+  session_checkin_single: { priceEnv: "STRIPE_PRICE_SESSION_CHECKIN_SINGLE", mode: "payment" },
+  session_online_2x: { priceEnv: "STRIPE_PRICE_SESSION_ONLINE_2X", mode: "subscription" },
+  session_online_3x: { priceEnv: "STRIPE_PRICE_SESSION_ONLINE_3X", mode: "subscription" },
+  session_online_4x: { priceEnv: "STRIPE_PRICE_SESSION_ONLINE_4X", mode: "subscription" },
+  session_inperson_2x: { priceEnv: "STRIPE_PRICE_SESSION_INPERSON_2X", mode: "subscription" },
+  session_inperson_3x: { priceEnv: "STRIPE_PRICE_SESSION_INPERSON_3X", mode: "subscription" },
+  session_inperson_4x: { priceEnv: "STRIPE_PRICE_SESSION_INPERSON_4X", mode: "subscription" },
+  session_checkin_2x: { priceEnv: "STRIPE_PRICE_SESSION_CHECKIN_2X", mode: "subscription" },
+  session_checkin_3x: { priceEnv: "STRIPE_PRICE_SESSION_CHECKIN_3X", mode: "subscription" },
+  session_checkin_4x: { priceEnv: "STRIPE_PRICE_SESSION_CHECKIN_4X", mode: "subscription" },
 };
 
 const json = (body: Record<string, unknown>, status = 200) =>

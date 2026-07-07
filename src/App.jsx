@@ -363,18 +363,28 @@ input,textarea,select{-webkit-appearance:none;}
 .faq-item{background:var(--g1);border:1px solid var(--bdr);border-radius:3px;padding:14px;}
 .faq-item strong{display:block;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:1px;color:var(--w);margin-bottom:6px;}
 .faq-item span{font-size:11px;color:var(--mut);line-height:1.7;font-weight:300;}
+.script-grid{display:grid;grid-template-columns:1fr .9fr;gap:14px;align-items:start;}
+.script-output{background:linear-gradient(145deg,rgba(232,25,44,0.08),rgba(20,20,20,0.98));border:1px solid rgba(232,25,44,0.22);border-radius:4px;padding:18px;position:sticky;top:92px;}
+.script-block{background:rgba(240,235,227,0.035);border:1px solid var(--bdr);border-radius:3px;padding:13px 14px;margin-top:10px;}
+.script-kicker{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+.script-copy{font-size:12px;color:var(--w);line-height:1.8;font-weight:300;white-space:pre-wrap;}
+.script-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+.script-chip{border:1px solid var(--bdr);background:rgba(240,235,227,0.03);border-radius:3px;padding:10px 8px;text-align:center;}
+.script-chip strong{display:block;font-family:'Oswald',sans-serif;font-size:11px;color:var(--w);letter-spacing:1px;margin-bottom:3px;}
+.script-chip span{font-size:9px;color:var(--mut);line-height:1.45;}
+@media(max-width:760px){.script-grid{grid-template-columns:1fr}.script-output{position:static}.script-mini{grid-template-columns:1fr}}
 @media(max-width:760px){.path-grid{grid-template-columns:1fr}.rod-stat-grid{grid-template-columns:1fr 1fr 1fr}.rec-card{align-items:flex-start}.rec-name{font-size:21px}}
 `;
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const PACKAGES=[
-  {tier:"Foundation",name:"GRIND",price:480,feat:false,consult:true,checkoutKey:"grind_full",splitCheckoutKey:"grind_split",
+  {tier:"Foundation",name:"GRIND",price:480,weeklyPrice:120,feat:false,consult:true,checkoutKey:"grind_full",weeklyCheckoutKey:"grind_weekly",splitCheckoutKey:"grind_split",
    desc:"Transformation essentials. Custom programs, meal prep, weekly accountability.",
    items:["Custom Monthly Workout","AI Meal Plan","Weekly Check-ins","Video Library","10 Meal Preps/Month","$75 Consult Included"]},
-  {tier:"Most Popular",name:"HUSTLE",price:550,feat:true,badge:"BEST VALUE",consult:true,checkoutKey:"hustle_full",splitCheckoutKey:"hustle_split",
+  {tier:"Most Popular",name:"HUSTLE",price:550,weeklyPrice:138,feat:true,badge:"BEST VALUE",consult:true,checkoutKey:"hustle_full",weeklyCheckoutKey:"hustle_weekly",splitCheckoutKey:"hustle_split",
    desc:"Fitness + business. Get in shape and start earning from fitness.",
    items:["Everything in Grind","Trainer Certification","Client Templates","Lead Gen Training","Monthly 1-on-1 Call","$75 Consult Included"]},
-  {tier:"Elite",name:"EMPIRE",price:1500,feat:false,checkoutKey:"empire_full",splitCheckoutKey:"empire_split",
+  {tier:"Elite",name:"EMPIRE",price:1500,weeklyPrice:375,feat:false,checkoutKey:"empire_full",weeklyCheckoutKey:"empire_weekly",splitCheckoutKey:"empire_split",
    desc:"The full system. Body, brand, certification, real clients, real leads.",
    items:["Everything in Hustle","Weekly 1-on-1 Coaching","Real Leads Monthly","Revenue Share","Custom Brand Kit","Mentorship Under Rod"]},
 ];
@@ -438,6 +448,13 @@ const FAQS=[
   ["How fast do people see results?","Most progress comes from consistency in the first few weeks: meals, training, check-ins, and adjustments. The system is built to remove guessing."],
   ["How does Rod operate?","Direct, structured, and accountability-heavy. If you disappear, skip check-ins, or freestyle the plan, the result slows down."],
 ];
+const DEFAULT_LEAD_SCRIPT={
+  audience:"busy adults and aspiring trainers who want structure, accountability, and a clear path instead of guessing alone",
+  result:"drop body fat, build lean muscle, lock in meals, and turn fitness interest into real client opportunities",
+  offer:"a free 7-day meal plan and a $75 strategy consult that gets credited when they join a package",
+  proof:"Rod gives direct coaching, meal structure, weekly check-ins, trainer certification support, and lead-gen training through GRIND, HUSTLE, and EMPIRE",
+  nextStep:"enter your email for the meal plan, then book the $75 consult so Rod can map the right package and next move",
+};
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const TIMES=["6:00 AM","7:00 AM","8:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM","7:00 PM","8:00 PM"];
@@ -563,7 +580,7 @@ export default function App(){
   },[]);
 
   const pages=[
-    ["home","Home"],["consult","$75 Consult"],["packages","Packages"],["compare","Compare"],
+    ["home","Home"],["script","Lead Script"],["consult","$75 Consult"],["packages","Packages"],["compare","Compare"],
     ["train","Train"],["meals","Meals"],["mealgen","Free Meal Plan"],["sessions","1-on-1 Sessions"],["book","Book"],
     ["checkin","Daily Check-In"],["habits","Habits"],["goals","Goals"],["messages","Messages"],
     ["videos","Videos"],["blog","Blog"],
@@ -590,6 +607,7 @@ export default function App(){
     </div>
     <div className="page">
       {page==="home"&&<HomePage setPage={setPage} showToast={showToast}/>}
+      {page==="script"&&<LeadScriptPage setPage={setPage} showToast={showToast}/>}
       {page==="consult"&&<ConsultPage setPage={setPage} showToast={showToast}/>}
       {page==="packages"&&<PackagesPage setPage={setPage} showToast={showToast}/>}
       {page==="compare"&&<ComparePage setPage={setPage}/>}
@@ -716,9 +734,9 @@ function HomePage({setPage,showToast}){
       <div className="hcon" style={{animation:"up 0.45s ease forwards"}}>
         <div className="htag"><span className="hd"/>Bodies by Rod · R.O.D. — Ready On Demand</div>
         <h1 className="hh1">BUILD<br/>YOUR<br/><span className="r">BODY.</span><br/>BUILD<br/>YOUR<br/><span className="r">BAG.</span></h1>
-        <p className="hsub">Ready On Demand — elite training, real certification, and real leads whenever you need them. Daily accountability. Split payments. Loyalty rewards. The full system built for people who are serious.</p>
+        <p className="hsub">For busy adults and aspiring trainers who are tired of guessing. Bodies by Rod helps you build the body, meal structure, accountability, and client-getting system. Start with the free plan, then book the $75 consult so Rod can map your next move.</p>
         <div className="hbtns">
-          <button className="bp" onClick={()=>setPage("qualify")}>See If You Qualify</button>
+          <button className="bp" onClick={()=>setPage("script")}>Build My Lead Plan</button>
           <button className="bs" onClick={()=>setPage("consult")}>Book $75 Consult</button>
         </div>
         {!lmDone?(
@@ -756,8 +774,8 @@ function HomePage({setPage,showToast}){
       <div className="path-grid">
         <div className="path-panel">
           <div className="stag" style={{marginBottom:4}}>New Here?</div>
-          <div className="path-title">THE SITE SHOULD MOVE YOU.</div>
-          <p className="path-copy">If you already know what you want, go straight to checkout. If you are new, start with the lane that sounds like you. Bodies by Rod is built to turn attention into a meal plan, a consult, a package, or a follow-up Rod can act on.</p>
+          <div className="path-title">THE SITE SHOULD QUALIFY YOU.</div>
+          <p className="path-copy">This page is built to make the next step obvious: get a free meal plan if you want a fast win, book the $75 consult if you need Rod to diagnose the plan, or choose a package if you already know you need structure.</p>
           <div className="start-options">
             {START_PATHS.map(path=>(
               <button key={path.id} className="start-card" onClick={()=>setPage(path.page)}>
@@ -888,6 +906,85 @@ function HomePage({setPage,showToast}){
       <button className="bs" style={{borderColor:"rgba(255,255,255,0.4)",color:"#fff"}} onClick={()=>setPage("consult")}>Book My $75 Consult →</button>
     </div>
   </>);
+}
+
+function LeadScriptPage({setPage,showToast}){
+  const [form,setForm]=useState(DEFAULT_LEAD_SCRIPT);
+  const [name,setName]=useState("");
+  const [email,setEmail]=useState("");
+  const [done,setDone]=useState(false);
+
+  const update=(key,value)=>setForm(prev=>({...prev,[key]:value}));
+  const headline=`Bodies by Rod is for ${form.audience}.`;
+  const script=`I help ${form.audience} ${form.result}. The way we start is simple: ${form.offer}. From there, ${form.proof}. If you want help instead of guessing, ${form.nextStep}.`;
+  const cta=`Want the plan built around your body, schedule, and goals? ${form.nextStep}.`;
+
+  const submit=async()=>{
+    try{
+      await submitNetlifyForm("lead-strategy-script", {
+        name: name.trim(),
+        email: email.trim(),
+        audience: form.audience.trim(),
+        result: form.result.trim(),
+        offer: form.offer.trim(),
+        proof: form.proof.trim(),
+        next_step: form.nextStep.trim(),
+        generated_script: script,
+        source: "Lead Script Builder",
+        status: "strategy-created",
+      });
+      captureConversion("lead-script-created", {
+        name: name.trim(),
+        email: email.trim(),
+        source: "Lead Script Builder",
+        status: "strategy-created",
+      }).catch(console.error);
+      setDone(true);
+      showToast("Lead script saved. Use it on the page, DMs, calls, and ads.");
+    }catch(e){
+      console.error(e);
+      showToast("Lead script could not be saved. Try again.");
+    }
+  };
+
+  return(<div className="sec" style={{maxWidth:980}}>
+    <div className="stag">Lead Generation Script</div><h2 className="sh2">WHO IT IS FOR.<br/>WHAT THEY GET.<br/>WHAT COMES NEXT.</h2>
+    <p className="sbody">Use this to tighten the message before buying ads or sending outreach. The script should make one person feel seen, promise one concrete outcome, and send them to one next step.</p>
+    <div className="script-grid">
+      <div className="card">
+        <div className="card-hdr"><span className="card-title">Clarify The Offer</span></div>
+        <div className="card-body">
+          <div className="g2" style={{marginBottom:12}}>
+            <div><div className="lbl">Your name</div><input className="inp" value={name} onChange={e=>setName(e.target.value)} placeholder="Rod or team member"/></div>
+            <div><div className="lbl">Follow-up email</div><input className="inp" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" type="email"/></div>
+          </div>
+          <div style={{display:"grid",gap:12}}>
+            <div><div className="lbl">Who is this for?</div><textarea className="ta" value={form.audience} onChange={e=>update("audience",e.target.value)} /></div>
+            <div><div className="lbl">What result should it create?</div><textarea className="ta" value={form.result} onChange={e=>update("result",e.target.value)} /></div>
+            <div><div className="lbl">What is the compelling offer?</div><textarea className="ta" value={form.offer} onChange={e=>update("offer",e.target.value)} /></div>
+            <div><div className="lbl">Why should they believe it?</div><textarea className="ta" value={form.proof} onChange={e=>update("proof",e.target.value)} /></div>
+            <div><div className="lbl">What should the visitor do next?</div><textarea className="ta" value={form.nextStep} onChange={e=>update("nextStep",e.target.value)} /></div>
+          </div>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:14}}>
+            <button className="btn btn-gold" onClick={submit}>Save Lead Script</button>
+            <button className="btn btn-ol" onClick={()=>setPage("consult")}>Book Consult</button>
+          </div>
+          {done&&<div className="promo-active" style={{marginTop:12}}>Saved. The same message now works as a homepage intro, ad hook, DM opener, and consult opener.</div>}
+        </div>
+      </div>
+      <div className="script-output">
+        <div className="script-kicker">Generated Message</div>
+        <h3 style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:28,lineHeight:1,color:"var(--w)",marginBottom:10}}>{headline}</h3>
+        <div className="script-block"><div className="script-kicker">Short Pitch</div><div className="script-copy">{script}</div></div>
+        <div className="script-block"><div className="script-kicker">Landing Page CTA</div><div className="script-copy">{cta}</div></div>
+        <div className="script-mini">
+          <div className="script-chip"><strong>Target</strong><span>One clear customer</span></div>
+          <div className="script-chip"><strong>Offer</strong><span>One low-friction reason</span></div>
+          <div className="script-chip"><strong>Follow-up</strong><span>One next action</span></div>
+        </div>
+      </div>
+    </div>
+  </div>);
 }
 
 // ─── CONSULT ──────────────────────────────────────────────────────────────────
@@ -1075,6 +1172,33 @@ function PackagesPage({setPage,showToast}){
           }}>
             🔒 {p.consult?"Pay & Book Consult":"Pay Securely with Stripe"}
           </button>
+          <button className="btn btn-full btn-gold" style={{marginTop:8}} onClick={async()=>{
+            captureConversion("package-checkout-click", {
+              package: p.name,
+              payment_mode: "weekly",
+              value: String(p.weeklyPrice),
+              weekly_value: String(p.weeklyPrice),
+              monthly_value: String(p.price),
+            }).catch(console.error);
+            try{
+              showToast("Redirecting to weekly payment checkout...");
+              await startStripeCheckout({
+                itemKey:p.weeklyCheckoutKey,
+                metadata:{
+                  package:p.name,
+                  payment_mode:"weekly",
+                  value:String(p.weeklyPrice),
+                  weekly_value:String(p.weeklyPrice),
+                  monthly_value:String(p.price),
+                },
+              });
+            }catch(error){
+              console.error(error);
+              showToast(error.message||"Weekly checkout is not ready yet.");
+            }
+          }}>
+            Start Weekly · ${p.weeklyPrice.toLocaleString()}/wk
+          </button>
           <button className="btn btn-full btn-ol" style={{marginTop:8}} onClick={async()=>{
             const splitAmount=Math.ceil(p.price/2);
             captureConversion("package-checkout-click", {
@@ -1101,6 +1225,9 @@ function PackagesPage({setPage,showToast}){
           }}>
             Split Payment · Pay ${Math.ceil(p.price/2).toLocaleString()} Today
           </button>
+          <div style={{fontSize:9,color:"var(--mut)",textAlign:"center",marginTop:6,lineHeight:1.5}}>
+            Weekly keeps the package active with smaller recurring payments.
+          </div>
           <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:6,flexWrap:"wrap"}}>
             {["Visa","MC","Amex","Apple Pay"].map(c=>(
               <span key={c} style={{fontSize:8,color:"var(--mut)",background:"var(--g3)",padding:"2px 6px",borderRadius:1,fontFamily:"'Oswald',sans-serif",letterSpacing:1}}>{c}</span>
@@ -2893,15 +3020,22 @@ function StreakCounter({streak=7,habits=5,checkins=12}){
 // 1. Go to dashboard.stripe.com and log in
 // 2. Create Products + Prices for each checkout item:
 //    - "GRIND Monthly Subscription" (recurring, $480/month)
+//    - "GRIND Weekly Subscription" (recurring, $120/week)
 //    - "GRIND Split Payment" (one-time, first half)
 //    - "HUSTLE Monthly Subscription" (recurring, $550/month)
+//    - "HUSTLE Weekly Subscription" (recurring, $138/week)
 //    - "HUSTLE Split Payment" (one-time, first half)
 //    - "EMPIRE Monthly Subscription" (recurring, $1,500/month)
+//    - "EMPIRE Weekly Subscription" (recurring, $375/week)
 //    - "EMPIRE Split Payment" (one-time, first half)
+//    - Single session prices for online, in-person, and strategy check-in
+//    - Recurring 2x, 3x, and 4x weekly session plans for each session type
 // 3. Copy each Stripe Price ID and add it to Netlify environment variables:
 //    STRIPE_SECRET_KEY, STRIPE_PRICE_GRIND, STRIPE_PRICE_HUSTLE,
-//    STRIPE_PRICE_EMPIRE, STRIPE_PRICE_GRIND_SPLIT,
-//    STRIPE_PRICE_HUSTLE_SPLIT, STRIPE_PRICE_EMPIRE_SPLIT
+//    STRIPE_PRICE_EMPIRE, STRIPE_PRICE_GRIND_WEEKLY, STRIPE_PRICE_HUSTLE_WEEKLY,
+//    STRIPE_PRICE_EMPIRE_WEEKLY, STRIPE_PRICE_GRIND_SPLIT,
+//    STRIPE_PRICE_HUSTLE_SPLIT, STRIPE_PRICE_EMPIRE_SPLIT, and the session
+//    Price IDs listed in netlify/functions/create-checkout-session.mts
 // 4. Stripe automatically handles card storage, receipts, and recurring billing.
 // NOTE: Stripe charges 2.9% + $0.30 per transaction
 
@@ -2919,6 +3053,8 @@ function SessionsPage({setPage,showToast}){
       name:"Online 1-on-1",
       icon:"💻",
       price:45,
+      singleCheckoutKey:"session_online_single",
+      monthlyCheckoutKeys:{ "2x":"session_online_2x", "3x":"session_online_3x", "4x":"session_online_4x" },
       desc:"FaceTime, Zoom, or Google Meet — train from anywhere",
       platforms:["FaceTime","Zoom","Google Meet"],
       color:"var(--gold)"
@@ -2927,6 +3063,8 @@ function SessionsPage({setPage,showToast}){
       name:"In-Person 1-on-1",
       icon:"🏋️",
       price:60,
+      singleCheckoutKey:"session_inperson_single",
+      monthlyCheckoutKeys:{ "2x":"session_inperson_2x", "3x":"session_inperson_3x", "4x":"session_inperson_4x" },
       desc:"At the gym or your location — hands-on coaching",
       platforms:["Location TBD"],
       color:"var(--red)"
@@ -2935,6 +3073,8 @@ function SessionsPage({setPage,showToast}){
       name:"Strategy Check-In",
       icon:"📞",
       price:30,
+      singleCheckoutKey:"session_checkin_single",
+      monthlyCheckoutKeys:{ "2x":"session_checkin_2x", "3x":"session_checkin_3x", "4x":"session_checkin_4x" },
       desc:"30 min phone call — accountability, adjustments, Q&A",
       platforms:["Phone Call"],
       color:"var(--green)"
@@ -2950,6 +3090,33 @@ function SessionsPage({setPage,showToast}){
   const current=sessions[sessionType];
   const freqData=frequencyOptions.find(f=>f.val===frequency);
   const monthlyTotal=current.price*freqData.sessions;
+  const startSessionCheckout=async({mode})=>{
+    const isSingle=mode==="single";
+    const value=isSingle?current.price:monthlyTotal;
+    const stage=isSingle?"session-single-checkout-click":"session-package-checkout-click";
+    const metadata={
+      name:name.trim(),
+      email:email.trim(),
+      session_type:current.name,
+      platform,
+      payment_mode:isSingle?"single_session":"monthly_sessions",
+      value:String(value),
+      sessions_per_month:isSingle?"1":String(freqData.sessions),
+      monthly_value:isSingle?"":String(monthlyTotal),
+    };
+    captureConversion(stage,metadata).catch(console.error);
+    try{
+      showToast(isSingle?"Redirecting to single session checkout...":"Redirecting to monthly session checkout...");
+      await startStripeCheckout({
+        itemKey:isSingle?current.singleCheckoutKey:current.monthlyCheckoutKeys[frequency],
+        email,
+        metadata,
+      });
+    }catch(error){
+      console.error(error);
+      showToast(error.message||"Session checkout is not ready yet.");
+    }
+  };
 
   const handleBook=async()=>{
     if(!platform||!name.trim()||!email.trim())return;
@@ -2984,7 +3151,7 @@ function SessionsPage({setPage,showToast}){
   return(<div className="sec">
     <div className="stag">1-on-1 Coaching</div>
     <h2 className="sh2">TRAIN WITH ROD.<br/>YOUR WAY.</h2>
-    <p className="sbody">Online or in-person. Pay per session or commit monthly. Start with one session. Scale as you grow. No contracts.</p>
+    <p className="sbody">Online or in-person. Buy one session when you want to test the fit, or lock in a weekly rhythm with a monthly session plan.</p>
 
     {step===1&&(<>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14,marginBottom:18}}>
@@ -3006,8 +3173,8 @@ function SessionsPage({setPage,showToast}){
         <div style={{fontFamily:"'Oswald',sans-serif",fontSize:10,letterSpacing:2,color:"var(--gold)",marginBottom:10}}>HOW IT WORKS</div>
         {[
           {num:"1",title:"Pick Your Session Type",desc:"Online, in-person, or phone check-in"},
-          {num:"2",title:"Choose Your Frequency",desc:"2x minimum, 3x, or 4x per week"},
-          {num:"3",title:"Pay Per Session",desc:"No contracts. Cancel anytime."},
+          {num:"2",title:"Buy One Or Build A Plan",desc:"Pay for one session or choose 2x, 3x, or 4x per week"},
+          {num:"3",title:"Checkout Securely",desc:"Single sessions and monthly plans use Stripe"},
           {num:"4",title:"Book Your Times",desc:"Live calendar — Rod blocks out his availability"},
           {num:"5",title:"Train with Rod",desc:"FaceTime, Zoom, Google Meet, or in person"},
         ].map((step,i)=>(
@@ -3040,14 +3207,24 @@ function SessionsPage({setPage,showToast}){
             </div>
           </div>
 
+          <div style={{background:"rgba(212,168,67,0.06)",border:"1px solid rgba(212,168,67,0.18)",borderRadius:3,padding:12,marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--gold)",marginBottom:3}}>Try One Session</div>
+                <div style={{fontSize:11,color:"var(--mut)",lineHeight:1.6}}>Buy one {current.name.toLowerCase()} session before committing to a package.</div>
+              </div>
+              <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:24,color:current.color}}>${current.price}</div>
+            </div>
+          </div>
+
           <div style={{marginBottom:16}}>
-            <div className="lbl">Sessions Per Week</div>
+            <div className="lbl">Or Choose Sessions Per Week</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
               {frequencyOptions.map(f=>(
                 <div key={f.val} onClick={()=>setFrequency(f.val)} style={{padding:12,borderRadius:3,border:frequency===f.val?`2px solid ${current.color}`:"1px solid var(--bdr)",background:frequency===f.val?current.color+"22":"var(--g3)",cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
                   <div style={{fontFamily:"'Oswald',sans-serif",fontSize:12,color:frequency===f.val?current.color:"var(--mut)",fontWeight:700}}>{f.val}</div>
                   <div style={{fontSize:9,color:"var(--mut)",marginTop:3}}>{f.sessions} sessions/mo</div>
-                  <div style={{fontSize:9,color:current.color,fontFamily:"'Oswald',sans-serif",marginTop:3,fontWeight:700}}>${f.monthlyTotal}/mo</div>
+                  <div style={{fontSize:9,color:current.color,fontFamily:"'Oswald',sans-serif",marginTop:3,fontWeight:700}}>${(current.price*f.sessions).toLocaleString()}/mo</div>
                 </div>
               ))}
             </div>
@@ -3070,8 +3247,11 @@ function SessionsPage({setPage,showToast}){
             <div><div className="lbl">Email *</div><input className="inp" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com" type="email"/></div>
           </div>
 
-          <button className="btn btn-full" onClick={handleBook} style={{background:current.color}} disabled={!platform||!name.trim()||!email.trim()}>
-            Continue to Checkout →
+          <button className="btn btn-full btn-gold" onClick={()=>startSessionCheckout({mode:"single"})} disabled={!platform||!name.trim()||!email.trim()}>
+            Buy 1 Session · ${current.price}
+          </button>
+          <button className="btn btn-full" onClick={handleBook} style={{background:current.color,marginTop:8}} disabled={!platform||!name.trim()||!email.trim()}>
+            Set Up Monthly Sessions →
           </button>
           <button className="btn btn-ol btn btn-sm" onClick={()=>setStep(1)}>← Back</button>
         </div>
@@ -3088,25 +3268,18 @@ function SessionsPage({setPage,showToast}){
           <strong style={{color:current.color}}>${monthlyTotal}/month</strong><br/>
           <span style={{fontSize:10,marginTop:6,display:"block"}}>Rod will confirm your schedule and payment details.</span>
         </div>
-        <button className="btn btn-full" onClick={()=>{
-          captureConversion("session-package-checkout-click", {
-            name: name.trim(),
-            email: email.trim(),
-            session_type: current.name,
-            platform,
-            frequency,
-            sessions_per_month: String(freqData.sessions),
-            monthly_value: String(monthlyTotal),
-          }).catch(console.error);
+        <button className="btn btn-full" onClick={()=>startSessionCheckout({mode:"monthly"})} style={{background:current.color,marginBottom:8}}>
+          Pay Monthly with Stripe
+        </button>
+        <button className="btn btn-full btn-ol" onClick={()=>{
           showToast("Session request saved. Pick a time on the booking calendar.");
           setPage("book");
-        }} style={{background:current.color,marginBottom:8}}>
-          Continue to Booking
+        }} style={{marginBottom:8}}>
+          Book First, Pay After Rod Confirms
         </button>
         <button className="btn btn-ol btn btn-sm" onClick={()=>setStep(2)}>← Change Details</button>
         <div style={{fontSize:9,color:"var(--mut)",marginTop:10,lineHeight:1.6}}>
-          Payment is handled after Rod confirms your session setup.<br/>
-          Package checkout remains available through Stripe.
+          Stripe checkout starts now, or Rod can confirm schedule first.
         </div>
       </div>
     </div>)}
