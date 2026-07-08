@@ -981,7 +981,6 @@ function LeadScriptPage({setPage,showToast}){
         </div>
       </div>
       <div className="script-output">
-        <div className="script-kicker">Generated Message</div>
         <h3 style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:28,lineHeight:1,color:"var(--w)",marginBottom:10}}>{headline}</h3>
         <div className="script-block"><div className="script-kicker">Short Pitch</div><div className="script-copy">{script}</div></div>
         <div className="script-block"><div className="script-kicker">Landing Page CTA</div><div className="script-copy">{cta}</div></div>
