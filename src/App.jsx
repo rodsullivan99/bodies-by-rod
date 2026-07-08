@@ -15,6 +15,14 @@ const submitNetlifyForm = async (formName, fields) => {
   if (!response.ok) throw new Error(`Netlify form ${formName} failed`);
 };
 
+const submitNetlifyMultipartForm = async (formData) => {
+  const response = await fetch("/__forms.html", {
+    method: "POST",
+    body: formData,
+  });
+  if (!response.ok) throw new Error("Netlify form upload failed");
+};
+
 const captureConversion = async (stage, fields = {}) => {
   await submitNetlifyForm("client-acquisition-event", {
     stage,
@@ -202,6 +210,23 @@ input,textarea,select{-webkit-appearance:none;}
 .tlabel{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);font-family:'Oswald',sans-serif;font-size:7px;letter-spacing:3px;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap;}
 .tbefore .tlabel{background:rgba(240,235,227,0.08);color:var(--mut);}
 .tafter .tlabel{background:rgba(232,25,44,0.25);color:var(--red);}
+.trans-wall{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;align-items:start;}
+.proof-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0;}
+.proof-tile{min-height:210px;border:1px solid var(--bdr);border-radius:3px;display:flex;align-items:flex-end;padding:12px;background:linear-gradient(145deg,#191919,#242424);position:relative;overflow:hidden;}
+.proof-tile.after{background:linear-gradient(145deg,#210405,#3a090d);}
+.proof-tile:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(11,11,11,.74));}
+.proof-tile span{position:relative;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--mut);}
+.proof-tile.after span{color:var(--red);}
+.story-card{background:linear-gradient(145deg,rgba(240,235,227,0.035),rgba(20,20,20,0.98));border:1px solid var(--bdr);border-radius:3px;padding:16px;}
+.story-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px;}
+.story-name{font-family:'Black Han Sans',sans-serif;font-size:22px;line-height:1;color:var(--w);}
+.story-result{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-top:5px;}
+.story-copy{font-size:12px;color:var(--mut);line-height:1.8;font-weight:300;margin-top:10px;}
+.submit-panel{background:linear-gradient(145deg,rgba(232,25,44,0.08),rgba(20,20,20,0.98));border:1px solid rgba(232,25,44,0.22);border-radius:4px;padding:18px;position:sticky;top:92px;}
+.file-row{border:1px dashed rgba(240,235,227,0.16);border-radius:3px;padding:10px;background:rgba(240,235,227,0.025);}
+.file-row input{width:100%;font-size:11px;color:var(--mut);}
+@media(max-width:860px){.trans-wall{grid-template-columns:1fr}.submit-panel{position:static}.proof-strip{grid-template-columns:1fr 1fr}.proof-tile{min-height:160px}}
+@media(max-width:520px){.proof-strip{grid-template-columns:1fr}.story-head{display:block}.proof-tile{min-height:140px}}
 
 /* PACKAGES */
 .pkg{background:var(--g1);border:1px solid var(--bdr);border-radius:3px;padding:20px 18px;position:relative;transition:transform 0.2s;}
@@ -409,6 +434,11 @@ const TRANSFORMS=[
   {name:"Keisha M.",result:"Down 2 dress sizes",pkg:"GRIND",b:"🌱",a:"💎",t:"60 days"},
   {name:"Jordan P.",result:"6-pack in 12 weeks",pkg:"HUSTLE",b:"😑",a:"🏆",t:"12 weeks"},
 ];
+const TRANSFORMATION_STORIES=[
+  {name:"Marcus T.",result:"Down 38 lbs",pkg:"HUSTLE",time:"90 days",focus:"Fat loss, food discipline, weekly check-ins",quote:"I stopped guessing. Rod gave me the meals, the workouts, and the pressure to stay locked in when I wanted to freestyle."},
+  {name:"Keisha M.",result:"Down 2 dress sizes",pkg:"GRIND",time:"60 days",focus:"Meal structure, habit consistency, training rhythm",quote:"The biggest change was having somebody check the details every week. I finally knew what to eat and what to fix."},
+  {name:"DeShawn R.",result:"18 lbs lean mass added",pkg:"EMPIRE",time:"4 months",focus:"Muscle gain, trainer certification, business prep",quote:"Empire gave me more than workouts. I built my body, got certified, and learned how to talk to real clients."},
+];
 const REVIEWS=[
   {name:"Marcus T.",stars:5,text:"Rod don't play. Week 3 people were asking what I was doing different. The meal prep system alone is worth it.",pkg:"HUSTLE",date:"2 weeks ago"},
   {name:"Tanisha W.",stars:5,text:"Certified trainer now with 4 clients under me. Templates, leads, full game plan. Not a regular program.",pkg:"EMPIRE",date:"1 month ago"},
@@ -589,7 +619,7 @@ export default function App(){
 
   const pages=[
     ["home","Home"],["script","Lead Script"],["consult","$75 Consult"],["packages","Packages"],["compare","Compare"],
-    ["train","Train"],["meals","Meals"],["mealgen","Free Meal Plan"],["sessions","1-on-1 Sessions"],["book","Book"],
+    ["transformations","Transformations"],["train","Train"],["meals","Meals"],["mealgen","Free Meal Plan"],["sessions","1-on-1 Sessions"],["book","Book"],
     ["checkin","Daily Check-In"],["habits","Habits"],["goals","Goals"],["messages","Messages"],
     ["videos","Videos"],["blog","Blog"],
     ["loyalty","Loyalty"],["leaderboard","Leaderboard"],
@@ -619,6 +649,7 @@ export default function App(){
       {page==="consult"&&<ConsultPage setPage={setPage} showToast={showToast}/>}
       {page==="packages"&&<PackagesPage setPage={setPage} showToast={showToast}/>}
       {page==="compare"&&<ComparePage setPage={setPage}/>}
+      {page==="transformations"&&<TransformationsPage setPage={setPage} showToast={showToast}/>}
       {page==="train"&&<TrainPage/>}
       {page==="meals"&&<MealsPage showToast={showToast}/>}
       {page==="mealgen"&&<MealPlanGeneratorPage showToast={showToast}/>}
@@ -989,6 +1020,123 @@ function LeadScriptPage({setPage,showToast}){
           <div className="script-chip"><strong>Offer</strong><span>One low-friction reason</span></div>
           <div className="script-chip"><strong>Follow-up</strong><span>One next action</span></div>
         </div>
+      </div>
+    </div>
+  </div>);
+}
+
+// ─── TRANSFORMATIONS ──────────────────────────────────────────────────────────
+function TransformationsPage({setPage,showToast}){
+  const [form,setForm]=useState({name:"",email:"",pkg:"GRIND",timeframe:"",result:"",story:"",instagram:"",consent:false});
+  const [beforeFile,setBeforeFile]=useState(null);
+  const [afterFile,setAfterFile]=useState(null);
+  const [done,setDone]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const update=(key,value)=>setForm(prev=>({...prev,[key]:value}));
+
+  const submit=async(e)=>{
+    e.preventDefault();
+    if(loading)return;
+    if(!form.name.trim()||!form.email.trim()||!form.result.trim()||!form.story.trim()||!form.consent){
+      showToast("Add your name, email, result, story, and publishing consent.");
+      return;
+    }
+    const data=new FormData();
+    data.append("form-name","transformation-submission");
+    data.append("name",form.name.trim());
+    data.append("email",form.email.trim());
+    data.append("package",form.pkg);
+    data.append("timeframe",form.timeframe.trim());
+    data.append("result",form.result.trim());
+    data.append("story",form.story.trim());
+    data.append("instagram",form.instagram.trim());
+    data.append("consent",form.consent?"yes":"no");
+    data.append("source","Transformation Wall");
+    data.append("status","pending-review");
+    data.append("bot-field","");
+    if(beforeFile)data.append("before_photo",beforeFile);
+    if(afterFile)data.append("after_photo",afterFile);
+    try{
+      setLoading(true);
+      await submitNetlifyMultipartForm(data);
+      captureConversion("transformation-submitted", {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        package: form.pkg,
+        value: form.result.trim(),
+        status: "pending-review",
+        source: "Transformation Wall",
+      }).catch(console.error);
+      setDone(true);
+      showToast("Transformation submitted for review.");
+    }catch(err){
+      console.error(err);
+      showToast("Transformation could not be submitted. Try again.");
+    }finally{
+      setLoading(false);
+    }
+  };
+
+  return(<div className="sec" style={{maxWidth:1120}}>
+    <div className="stag">Client Transformations</div><h2 className="sh2">PROOF PEOPLE<br/>CAN FEEL.</h2>
+    <p className="sbody">Approved client stories live here so new visitors can see the work, the timeline, and the kind of support behind the result. Submit yours below and Rod reviews it before it goes public.</p>
+    <div className="trans-wall">
+      <div style={{display:"grid",gap:14}}>
+        {TRANSFORMATION_STORIES.map((story,i)=>(
+          <div className="story-card" key={story.name}>
+            <div className="story-head">
+              <div>
+                <div className="story-name">{story.name}</div>
+                <div className="story-result">{story.result} · {story.time}</div>
+              </div>
+              <span className={`badge ${story.pkg==="EMPIRE"?"badge-red":story.pkg==="HUSTLE"?"badge-gold":"badge-green"}`}>{story.pkg}</span>
+            </div>
+            <div className="proof-strip">
+              <div className="proof-tile"><span>Before</span></div>
+              <div className="proof-tile after"><span>After</span></div>
+            </div>
+            <div style={{fontFamily:"'Oswald',sans-serif",fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"var(--gold)",marginBottom:6}}>{story.focus}</div>
+            <div className="story-copy">"{story.quote}"</div>
+          </div>
+        ))}
+        <div className="proof-note">New submissions are held for review before being posted. That keeps the wall clean, consent-based, and focused on real Bodies by Rod results.</div>
+      </div>
+      <div className="submit-panel">
+        {done?(
+          <div style={{textAlign:"center",padding:"22px 4px"}}>
+            <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:24,color:"var(--red)",marginBottom:7}}>STORY SENT</div>
+            <div style={{fontSize:12,color:"var(--mut)",lineHeight:1.7,marginBottom:14}}>Rod reviews every transformation before it goes live. If approved, it can be featured on this page.</div>
+            <button className="btn btn-full" onClick={()=>setPage("packages")}>See Packages</button>
+          </div>
+        ):(
+          <form name="transformation-submission" method="POST" data-netlify="true" netlify-honeypot="bot-field" encType="multipart/form-data" onSubmit={submit}>
+            <input type="hidden" name="form-name" value="transformation-submission"/>
+            <p style={{display:"none"}}><label>Do not fill this out <input name="bot-field"/></label></p>
+            <div className="script-kicker">Submit Your Result</div>
+            <div style={{display:"grid",gap:11}}>
+              <div className="g2">
+                <div><div className="lbl">Name *</div><input className="inp" name="name" value={form.name} onChange={e=>update("name",e.target.value)} placeholder="First name"/></div>
+                <div><div className="lbl">Email *</div><input className="inp" name="email" type="email" value={form.email} onChange={e=>update("email",e.target.value)} placeholder="you@example.com"/></div>
+              </div>
+              <div className="g2">
+                <div><div className="lbl">Package</div><select className="sel" name="package" value={form.pkg} onChange={e=>update("pkg",e.target.value)}>{["GRIND","HUSTLE","EMPIRE","1-on-1 Sessions","Meal Prep"].map(o=><option key={o}>{o}</option>)}</select></div>
+                <div><div className="lbl">Timeframe</div><input className="inp" name="timeframe" value={form.timeframe} onChange={e=>update("timeframe",e.target.value)} placeholder="90 days, 6 weeks, etc."/></div>
+              </div>
+              <div><div className="lbl">Result *</div><input className="inp" name="result" value={form.result} onChange={e=>update("result",e.target.value)} placeholder="Lost 22 lbs, gained muscle, got certified"/></div>
+              <div><div className="lbl">Your Story *</div><textarea className="ta" name="story" value={form.story} onChange={e=>update("story",e.target.value)} placeholder="What changed? What helped most? What would you tell somebody thinking about starting?"/></div>
+              <div><div className="lbl">Instagram / Tag</div><input className="inp" name="instagram" value={form.instagram} onChange={e=>update("instagram",e.target.value)} placeholder="@yourhandle or leave blank"/></div>
+              <div className="g2">
+                <div className="file-row"><div className="lbl">Before Photo</div><input name="before_photo" type="file" accept="image/*" onChange={e=>setBeforeFile(e.target.files?.[0]||null)}/></div>
+                <div className="file-row"><div className="lbl">After Photo</div><input name="after_photo" type="file" accept="image/*" onChange={e=>setAfterFile(e.target.files?.[0]||null)}/></div>
+              </div>
+              <label style={{display:"flex",gap:9,alignItems:"flex-start",fontSize:11,color:"var(--mut)",lineHeight:1.55}}>
+                <input name="consent" type="checkbox" checked={form.consent} onChange={e=>update("consent",e.target.checked)} style={{marginTop:2}}/>
+                I give Bodies by Rod permission to review and publish this transformation, including submitted photos and story details.
+              </label>
+              <button className="btn btn-full" disabled={loading||!form.consent}>{loading?"Submitting...":"Submit For Review"}</button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   </div>);
