@@ -212,18 +212,17 @@ input,textarea,select{-webkit-appearance:none;}
 .tafter .tlabel{background:rgba(232,25,44,0.25);color:var(--red);}
 .trans-wall{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;align-items:start;}
 .proof-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0;}
-.proof-tile{min-height:210px;border:1px solid var(--bdr);border-radius:3px;display:flex;align-items:flex-end;padding:12px;background:linear-gradient(145deg,#191919,#242424);position:relative;overflow:hidden;}
-.proof-tile.after{background:linear-gradient(145deg,#210405,#3a090d);}
+.proof-tile{min-height:210px;border:1px solid var(--bdr);border-radius:3px;display:flex;align-items:flex-end;padding:12px;background:var(--g2) center/cover no-repeat;position:relative;overflow:hidden;}
+.proof-tile.after{border-color:rgba(232,25,44,.18);}
 .proof-tile:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(11,11,11,.74));}
-.proof-tile:after{content:"";position:absolute;left:50%;bottom:36px;transform:translateX(-50%);width:68px;height:128px;border-radius:42% 42% 18% 18%;background:linear-gradient(180deg,rgba(240,235,227,.24),rgba(240,235,227,.08));box-shadow:0 -44px 0 -24px rgba(240,235,227,.22),-42px 22px 0 -25px rgba(240,235,227,.12),42px 22px 0 -25px rgba(240,235,227,.12);}
-.proof-tile.after:after{width:54px;height:138px;border-radius:36% 36% 16% 16%;background:linear-gradient(180deg,rgba(232,25,44,.38),rgba(212,168,67,.16));box-shadow:0 -46px 0 -25px rgba(232,25,44,.34),-48px 18px 0 -27px rgba(232,25,44,.18),48px 18px 0 -27px rgba(232,25,44,.18);}
-.proof-tile.muscle-before:after{width:50px;height:126px;}
-.proof-tile.muscle-after:after{width:72px;height:142px;box-shadow:0 -46px 0 -25px rgba(232,25,44,.34),-56px 18px 0 -25px rgba(232,25,44,.2),56px 18px 0 -25px rgba(232,25,44,.2);}
-.proof-tile.tone-before:after{width:62px;height:124px;}
-.proof-tile.tone-after:after{width:50px;height:136px;}
+.proof-tile.fatloss-before{background-image:url('/assets/transformations/progress-fatloss-before.jpg');}
+.proof-tile.fatloss-after{background-image:url('/assets/transformations/progress-fatloss-after.jpg');}
+.proof-tile.tone-before{background-image:url('/assets/transformations/progress-tone-before.jpg');}
+.proof-tile.tone-after{background-image:url('/assets/transformations/progress-tone-after.jpg');}
+.proof-tile.muscle-before{background-image:url('/assets/transformations/progress-muscle-before.jpg');}
+.proof-tile.muscle-after{background-image:url('/assets/transformations/progress-muscle-after.jpg');}
 .proof-tile span{position:relative;z-index:2;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--mut);}
 .proof-tile.after span{color:var(--red);}
-.proof-meta{position:absolute;right:10px;top:10px;z-index:2;font-family:'Oswald',sans-serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:rgba(240,235,227,.46);border:1px solid rgba(240,235,227,.12);border-radius:2px;padding:3px 6px;background:rgba(11,11,11,.36);}
 .story-card{background:linear-gradient(145deg,rgba(240,235,227,0.035),rgba(20,20,20,0.98));border:1px solid var(--bdr);border-radius:3px;padding:16px;}
 .story-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px;}
 .story-name{font-family:'Black Han Sans',sans-serif;font-size:22px;line-height:1;color:var(--w);}
@@ -1099,8 +1098,8 @@ function TransformationsPage({setPage,showToast}){
               <span className={`badge ${story.pkg==="EMPIRE"?"badge-red":story.pkg==="HUSTLE"?"badge-gold":"badge-green"}`}>{story.pkg}</span>
             </div>
             <div className="proof-strip">
-              <div className={`proof-tile ${story.visual}-before`}><div className="proof-meta">Sample Visual</div><span>Before</span></div>
-              <div className={`proof-tile after ${story.visual}-after`}><div className="proof-meta">Sample Visual</div><span>After</span></div>
+              <div className={`proof-tile ${story.visual}-before`}><span>Before</span></div>
+              <div className={`proof-tile after ${story.visual}-after`}><span>After</span></div>
             </div>
             <div style={{fontFamily:"'Oswald',sans-serif",fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"var(--gold)",marginBottom:6}}>{story.focus}</div>
             <div className="story-copy">"{story.quote}"</div>
