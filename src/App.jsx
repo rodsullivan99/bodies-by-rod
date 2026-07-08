@@ -3204,12 +3204,8 @@ function StreakCounter({streak=7,habits=5,checkins=12}){
 //    - Recurring 1x, 2x, 3x, and 4x weekly session plans for each session type
 //    - Checkout can apply a 7-day subscription trial when the app sends
 //      trialDays: 7. Keep that reserved for low-ticket template offers.
-// 3. Copy each Stripe Price ID and add it to Netlify environment variables:
-//    STRIPE_SECRET_KEY, STRIPE_PRICE_GRIND, STRIPE_PRICE_HUSTLE,
-//    STRIPE_PRICE_EMPIRE, STRIPE_PRICE_GRIND_WEEKLY, STRIPE_PRICE_HUSTLE_WEEKLY,
-//    STRIPE_PRICE_EMPIRE_WEEKLY, STRIPE_PRICE_GRIND_SPLIT,
-//    STRIPE_PRICE_HUSTLE_SPLIT, STRIPE_PRICE_EMPIRE_SPLIT, and the session
-//    Price IDs listed in netlify/functions/create-checkout-session.mts
+// 3. Copy each Stripe Price ID and add it to the matching Netlify
+//    environment variable used by the checkout function.
 // 4. Stripe automatically handles card storage, receipts, and recurring billing.
 // NOTE: Stripe charges 2.9% + $0.30 per transaction
 
