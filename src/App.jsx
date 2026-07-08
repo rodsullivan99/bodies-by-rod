@@ -205,11 +205,19 @@ input,textarea,select{-webkit-appearance:none;}
 .trans-card{background:var(--g1);border:1px solid var(--bdr);border-radius:3px;overflow:hidden;transition:transform 0.2s;}
 .trans-card:hover{transform:translateY(-3px);border-color:rgba(232,25,44,0.25);}
 .trans-imgs{display:grid;grid-template-columns:1fr 1fr;height:150px;}
-.tbefore{background:linear-gradient(145deg,#181818,#222);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;}
-.tafter{background:linear-gradient(145deg,#1a0303,#280606);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;}
+.tbefore,.tafter{background:var(--g2) center/200% 100% no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;position:relative;overflow:hidden;padding-bottom:7px;}
+.tbefore:before,.tafter:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(11,11,11,.7));}
 .tlabel{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);font-family:'Oswald',sans-serif;font-size:7px;letter-spacing:3px;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap;}
 .tbefore .tlabel{background:rgba(240,235,227,0.08);color:var(--mut);}
 .tafter .tlabel{background:rgba(232,25,44,0.25);color:var(--red);}
+.tbefore.fatloss,.tafter.fatloss{background-image:url('/assets/transformations/progress-marcus-composite.jpg');}
+.tbefore.tone,.tafter.tone{background-image:url('/assets/transformations/progress-keisha-composite.jpg');}
+.tbefore.muscle,.tafter.muscle{background-image:url('/assets/transformations/progress-deshawn-composite.jpg');}
+.tbefore.abs,.tafter.abs{background-image:url('/assets/transformations/progress-jordan-composite.jpg');}
+.tbefore{background-position:left center;}
+.tafter{background-position:right center;}
+.tbefore.tone{background-position:12% center;background-size:240% 100%;}
+.tafter.tone{background-position:88% center;background-size:240% 100%;}
 .trans-wall{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;align-items:start;}
 .proof-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0;}
 .proof-tile{min-height:210px;border:1px solid var(--bdr);border-radius:3px;display:flex;align-items:flex-end;padding:12px;background:var(--g2) center/200% 100% no-repeat;position:relative;overflow:hidden;}
@@ -217,10 +225,12 @@ input,textarea,select{-webkit-appearance:none;}
 .proof-tile:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(11,11,11,.74));}
 .proof-tile.fatloss-before{background-image:url('/assets/transformations/progress-marcus-composite.jpg');background-position:left center;}
 .proof-tile.fatloss-after{background-image:url('/assets/transformations/progress-marcus-composite.jpg');background-position:right center;}
-.proof-tile.tone-before{background-image:url('/assets/transformations/progress-keisha-composite.jpg');background-position:left center;}
-.proof-tile.tone-after{background-image:url('/assets/transformations/progress-keisha-composite.jpg');background-position:right center;}
+.proof-tile.tone-before{background-image:url('/assets/transformations/progress-keisha-composite.jpg');background-position:12% center;background-size:240% 100%;}
+.proof-tile.tone-after{background-image:url('/assets/transformations/progress-keisha-composite.jpg');background-position:88% center;background-size:240% 100%;}
 .proof-tile.muscle-before{background-image:url('/assets/transformations/progress-deshawn-composite.jpg');background-position:left center;}
 .proof-tile.muscle-after{background-image:url('/assets/transformations/progress-deshawn-composite.jpg');background-position:right center;}
+.proof-tile.abs-before{background-image:url('/assets/transformations/progress-jordan-composite.jpg');background-position:left center;}
+.proof-tile.abs-after{background-image:url('/assets/transformations/progress-jordan-composite.jpg');background-position:right center;}
 .proof-tile span{position:relative;z-index:2;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--mut);}
 .proof-tile.after span{color:var(--red);}
 .story-card{background:linear-gradient(145deg,rgba(240,235,227,0.035),rgba(20,20,20,0.98));border:1px solid var(--bdr);border-radius:3px;padding:16px;}
@@ -435,15 +445,16 @@ const STARTER_MEAL_PLAN=[
   {meal:"Dinner",food:"Salmon, sweet potato, asparagus",macros:"42P / 40C / 14F"},
 ];
 const TRANSFORMS=[
-  {name:"Marcus T.",result:"Lost 38 lbs — 90 days",pkg:"HUSTLE",b:"😐",a:"🔥",t:"90 days"},
-  {name:"DeShawn R.",result:"Gained 18 lbs muscle",pkg:"EMPIRE",b:"😤",a:"⚡",t:"4 months"},
-  {name:"Keisha M.",result:"Down 2 dress sizes",pkg:"GRIND",b:"🌱",a:"💎",t:"60 days"},
-  {name:"Jordan P.",result:"6-pack in 12 weeks",pkg:"HUSTLE",b:"😑",a:"🏆",t:"12 weeks"},
+  {name:"Marcus T.",result:"Lost 38 lbs — 90 days",pkg:"HUSTLE",visual:"fatloss",t:"90 days"},
+  {name:"DeShawn R.",result:"Gained 18 lbs muscle",pkg:"EMPIRE",visual:"muscle",t:"4 months"},
+  {name:"Keisha M.",result:"Down 2 dress sizes",pkg:"GRIND",visual:"tone",t:"60 days"},
+  {name:"Jordan P.",result:"6-pack in 12 weeks",pkg:"HUSTLE",visual:"abs",t:"12 weeks"},
 ];
 const TRANSFORMATION_STORIES=[
   {name:"Marcus T.",result:"Major weight cut",pkg:"HUSTLE",time:"90 days",visual:"fatloss",focus:"Fat loss, food discipline, weekly check-ins",quote:"I stopped guessing. Rod gave me the meals, the workouts, and the pressure to stay locked in when I wanted to freestyle."},
   {name:"Keisha M.",result:"Down 2 dress sizes",pkg:"GRIND",time:"60 days",visual:"tone",focus:"Meal structure, habit consistency, training rhythm",quote:"The biggest change was having somebody check the details every week. I finally knew what to eat and what to fix."},
   {name:"DeShawn R.",result:"Visible lean mass added",pkg:"EMPIRE",time:"4 months",visual:"muscle",focus:"Muscle gain, trainer certification, business prep",quote:"Empire gave me more than workouts. I built my body, got certified, and learned how to talk to real clients."},
+  {name:"Jordan P.",result:"6-pack in 12 weeks",pkg:"HUSTLE",time:"12 weeks",visual:"abs",focus:"Leaning out, core definition, training consistency",quote:"The structure made the difference. I had the plan, the food targets, and the workouts lined up instead of guessing every week."},
 ];
 const REVIEWS=[
   {name:"Marcus T.",stars:5,text:"Rod don't play. Week 3 people were asking what I was doing different. The meal prep system alone is worth it.",pkg:"HUSTLE",date:"2 weeks ago"},
@@ -905,8 +916,8 @@ function HomePage({setPage,showToast}){
       <div className="g4">{TRANSFORMS.map((t,i)=>(
         <div key={i} className="trans-card">
           <div className="trans-imgs">
-            <div className="tbefore"><div style={{fontSize:38,opacity:0.5}}>{t.b}</div><div className="tlabel">Before</div></div>
-            <div className="tafter"><div style={{fontSize:38}}>{t.a}</div><div className="tlabel">After</div></div>
+            <div className={`tbefore ${t.visual}`}><div className="tlabel">Before</div></div>
+            <div className={`tafter ${t.visual}`}><div className="tlabel">After</div></div>
           </div>
           <div style={{padding:"11px 13px"}}>
             <div style={{fontFamily:"'Oswald',sans-serif",fontSize:13,fontWeight:600,color:"var(--w)",marginBottom:2}}>{t.name}</div>
@@ -915,7 +926,7 @@ function HomePage({setPage,showToast}){
           </div>
         </div>
       ))}</div>
-      <div className="proof-note">Next upgrade for this section: replace these placeholders with approved client before/after photos, real reviews, and video proof from the admin dashboard. Every result should show the package, timeline, and what changed.</div>
+      <div className="proof-note">Approved client submissions can replace these transformation examples from the review queue. Every result should show the package, timeline, and what changed.</div>
     </div>
 
     <div className="sec" style={{paddingTop:0}}>
