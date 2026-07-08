@@ -57,6 +57,25 @@ const cleanMetadata = (metadata: unknown) => {
   );
 };
 
+const getStripeSetupError = (error: unknown) => {
+  if (!error || typeof error !== "object") return "Stripe checkout is unavailable right now.";
+
+  const stripeError = error as { type?: string; code?: string; message?: string };
+  if (stripeError.type === "StripeAuthenticationError") {
+    return "Stripe checkout is not configured correctly. Check STRIPE_SECRET_KEY in Netlify.";
+  }
+
+  if (stripeError.type === "StripeInvalidRequestError") {
+    if (stripeError.code === "resource_missing") {
+      return "Stripe checkout price is not valid for this Stripe account. Check the matching STRIPE_PRICE_* value in Netlify.";
+    }
+
+    return stripeError.message || "Stripe checkout request is not configured correctly.";
+  }
+
+  return "Stripe checkout is unavailable right now.";
+};
+
 export default async (req: Request) => {
   if (req.method !== "POST") {
     return json({ error: "Method not allowed" }, 405);
@@ -79,6 +98,10 @@ export default async (req: Request) => {
     const price = process.env[item.priceEnv];
     if (!price) {
       return json({ error: `Missing ${item.priceEnv} in Netlify environment variables.` }, 503);
+    }
+
+    if (!price.startsWith("price_")) {
+      return json({ error: `${item.priceEnv} must be a Stripe Price ID that starts with price_.` }, 503);
     }
 
     const email = typeof body.email === "string" && body.email.includes("@") ? body.email.trim() : undefined;
@@ -112,7 +135,7 @@ export default async (req: Request) => {
     return json({ url: session.url });
   } catch (error) {
     console.error("Stripe checkout session failed", error);
-    return json({ error: "Stripe checkout is unavailable right now." }, 500);
+    return json({ error: getStripeSetupError(error) }, 500);
   }
 };
 

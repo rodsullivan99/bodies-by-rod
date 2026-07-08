@@ -55,6 +55,7 @@ const sendMealPlanEmail = async ({ name = "", email, goal, diet, meals }) => {
   if (!response.ok) {
     throw new Error(data.error || "Meal plan email could not be sent");
   }
+  return data;
 };
 
 const CSS = `
@@ -761,7 +762,7 @@ function HomePage({setPage,showToast}){
         email: email.trim(),
         source: "Hero Free Meal Plan",
       });
-      await sendMealPlanEmail({
+      const emailResult=await sendMealPlanEmail({
         email: email.trim(),
         goal: "Starter Plan",
         diet: "Regular",
@@ -773,7 +774,7 @@ function HomePage({setPage,showToast}){
         status: "new-lead",
       }).catch(console.error);
       setLmDone(true);
-      showToast("Free 7-Day Meal Plan sent to "+email+"!");
+      showToast(emailResult.emailSent===false?"Meal plan request received. Rod will follow up.":"Free 7-Day Meal Plan sent to "+email+"!");
     }catch(e){
       console.error(e);
       showToast("Email could not be submitted. Try again.");
@@ -3609,20 +3610,20 @@ function MealPlanGeneratorPage({showToast}){
 
     const meals=generatePlanHTML(goal,diet,name);
     try{
-      await sendMealPlanEmail({
+      const emailResult=await sendMealPlanEmail({
         name: name.trim(),
         email: email.trim(),
         goal: goals[goal].label,
         diet: diets[diet].label,
         meals,
       });
+      setGenerated(true);
+      showToast(emailResult.emailSent===false?"Meal plan generated. Rod will follow up with your copy.":"Meal plan generated! Check your email.");
     }catch(e){
       console.error(e);
       showToast(e.message||"Meal plan email could not be sent. Try again.");
       return;
     }
-    setGenerated(true);
-    showToast("Meal plan generated! Check your email.");
   };
 
   const generatePlanHTML=(g,d,clientName)=>{
