@@ -159,7 +159,8 @@ export default async (req: Request) => {
     }
 
     if (!process.env.RESEND_API_KEY && !process.env.SENDGRID_API_KEY) {
-      return json({ error: "Meal plan email is not configured." }, 503);
+      console.warn("Meal plan email provider is not configured; lead was captured by Netlify Forms.");
+      return json({ ok: true, emailSent: false, reason: "email_provider_not_configured" });
     }
 
     const subject = "Your Free 7-Day Bodies by Rod Meal Plan";
@@ -172,7 +173,7 @@ export default async (req: Request) => {
       await sendWithSendGrid(email, subject, html, text);
     }
 
-    return json({ ok: true });
+    return json({ ok: true, emailSent: true });
   } catch (error) {
     console.error("Meal plan email failed", error);
     return json({ error: "Meal plan email could not be sent right now." }, 500);
