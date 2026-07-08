@@ -15,6 +15,14 @@ const submitNetlifyForm = async (formName, fields) => {
   if (!response.ok) throw new Error(`Netlify form ${formName} failed`);
 };
 
+const submitNetlifyMultipartForm = async (formData) => {
+  const response = await fetch("/__forms.html", {
+    method: "POST",
+    body: formData,
+  });
+  if (!response.ok) throw new Error("Netlify form upload failed");
+};
+
 const captureConversion = async (stage, fields = {}) => {
   await submitNetlifyForm("client-acquisition-event", {
     stage,
@@ -24,11 +32,11 @@ const captureConversion = async (stage, fields = {}) => {
   });
 };
 
-const startStripeCheckout = async ({ itemKey, email, metadata = {} }) => {
+const startStripeCheckout = async ({ itemKey, email, trialDays, metadata = {} }) => {
   const response = await fetch("/api/create-checkout-session", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ itemKey, email, metadata }),
+    body: JSON.stringify({ itemKey, email, trialDays, metadata }),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || !data.url) {
@@ -197,11 +205,44 @@ input,textarea,select{-webkit-appearance:none;}
 .trans-card{background:var(--g1);border:1px solid var(--bdr);border-radius:3px;overflow:hidden;transition:transform 0.2s;}
 .trans-card:hover{transform:translateY(-3px);border-color:rgba(232,25,44,0.25);}
 .trans-imgs{display:grid;grid-template-columns:1fr 1fr;height:150px;}
-.tbefore{background:linear-gradient(145deg,#181818,#222);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;}
-.tafter{background:linear-gradient(145deg,#1a0303,#280606);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;}
+.tbefore,.tafter{background:var(--g2) center/200% 100% no-repeat;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;position:relative;overflow:hidden;padding-bottom:7px;}
+.tbefore:before,.tafter:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(11,11,11,.7));}
 .tlabel{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);font-family:'Oswald',sans-serif;font-size:7px;letter-spacing:3px;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap;}
 .tbefore .tlabel{background:rgba(240,235,227,0.08);color:var(--mut);}
 .tafter .tlabel{background:rgba(232,25,44,0.25);color:var(--red);}
+.tbefore.fatloss,.tafter.fatloss{background-image:url('/assets/transformations/progress-marcus-composite.jpg');}
+.tbefore.tone,.tafter.tone{background-image:url('/assets/transformations/progress-keisha-composite.jpg');}
+.tbefore.muscle,.tafter.muscle{background-image:url('/assets/transformations/progress-deshawn-composite.jpg');}
+.tbefore.abs,.tafter.abs{background-image:url('/assets/transformations/progress-jordan-composite.jpg');}
+.tbefore{background-position:left center;}
+.tafter{background-position:right center;}
+.tbefore.tone{background-position:12% center;background-size:240% 100%;}
+.tafter.tone{background-position:88% center;background-size:240% 100%;}
+.trans-wall{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;align-items:start;}
+.proof-strip{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0;}
+.proof-tile{min-height:210px;border:1px solid var(--bdr);border-radius:3px;display:flex;align-items:flex-end;padding:12px;background:var(--g2) center/200% 100% no-repeat;position:relative;overflow:hidden;}
+.proof-tile.after{border-color:rgba(232,25,44,.18);}
+.proof-tile:before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent,rgba(11,11,11,.74));}
+.proof-tile.fatloss-before{background-image:url('/assets/transformations/progress-marcus-composite.jpg');background-position:left center;}
+.proof-tile.fatloss-after{background-image:url('/assets/transformations/progress-marcus-composite.jpg');background-position:right center;}
+.proof-tile.tone-before{background-image:url('/assets/transformations/progress-keisha-composite.jpg');background-position:12% center;background-size:240% 100%;}
+.proof-tile.tone-after{background-image:url('/assets/transformations/progress-keisha-composite.jpg');background-position:88% center;background-size:240% 100%;}
+.proof-tile.muscle-before{background-image:url('/assets/transformations/progress-deshawn-composite.jpg');background-position:left center;}
+.proof-tile.muscle-after{background-image:url('/assets/transformations/progress-deshawn-composite.jpg');background-position:right center;}
+.proof-tile.abs-before{background-image:url('/assets/transformations/progress-jordan-composite.jpg');background-position:left center;}
+.proof-tile.abs-after{background-image:url('/assets/transformations/progress-jordan-composite.jpg');background-position:right center;}
+.proof-tile span{position:relative;z-index:2;font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--mut);}
+.proof-tile.after span{color:var(--red);}
+.story-card{background:linear-gradient(145deg,rgba(240,235,227,0.035),rgba(20,20,20,0.98));border:1px solid var(--bdr);border-radius:3px;padding:16px;}
+.story-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:10px;}
+.story-name{font-family:'Black Han Sans',sans-serif;font-size:22px;line-height:1;color:var(--w);}
+.story-result{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--red);margin-top:5px;}
+.story-copy{font-size:12px;color:var(--mut);line-height:1.8;font-weight:300;margin-top:10px;}
+.submit-panel{background:linear-gradient(145deg,rgba(232,25,44,0.08),rgba(20,20,20,0.98));border:1px solid rgba(232,25,44,0.22);border-radius:4px;padding:18px;position:sticky;top:92px;}
+.file-row{border:1px dashed rgba(240,235,227,0.16);border-radius:3px;padding:10px;background:rgba(240,235,227,0.025);}
+.file-row input{width:100%;font-size:11px;color:var(--mut);}
+@media(max-width:860px){.trans-wall{grid-template-columns:1fr}.submit-panel{position:static}.proof-strip{grid-template-columns:1fr 1fr}.proof-tile{min-height:160px}}
+@media(max-width:520px){.proof-strip{grid-template-columns:1fr}.story-head{display:block}.proof-tile{min-height:140px}}
 
 /* PACKAGES */
 .pkg{background:var(--g1);border:1px solid var(--bdr);border-radius:3px;padding:20px 18px;position:relative;transition:transform 0.2s;}
@@ -359,22 +400,40 @@ input,textarea,select{-webkit-appearance:none;}
 .rec-card{background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.18);border-radius:3px;padding:13px 14px;display:flex;align-items:center;gap:12px;justify-content:space-between;flex-wrap:wrap;}
 .rec-name{font-family:'Black Han Sans',sans-serif;font-size:24px;color:var(--green);line-height:1;}
 .proof-note{margin-top:12px;background:rgba(232,25,44,0.06);border:1px solid rgba(232,25,44,0.16);border-radius:3px;padding:12px 14px;font-size:11px;color:var(--mut);line-height:1.7;}
+.start-ladder{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:0 0 18px;}
+.ladder-card{background:var(--g1);border:1px solid var(--bdr);border-radius:4px;padding:15px;position:relative;overflow:hidden;min-height:178px;}
+.ladder-card.featured{border-color:rgba(34,197,94,0.34);background:linear-gradient(150deg,rgba(34,197,94,0.08),var(--g1));}
+.ladder-kicker{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+.ladder-name{font-family:'Black Han Sans',sans-serif;font-size:22px;color:var(--w);line-height:1;margin-bottom:7px;}
+.ladder-price{font-family:'Oswald',sans-serif;font-size:13px;color:var(--green);font-weight:700;letter-spacing:1px;margin-bottom:8px;}
+.ladder-copy{font-size:11px;color:var(--mut);line-height:1.65;font-weight:300;}
+.ladder-tag{position:absolute;right:10px;bottom:10px;font-family:'Oswald',sans-serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--mut);border:1px solid var(--bdr);border-radius:2px;padding:3px 6px;background:rgba(240,235,227,0.03);}
 .faq-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:10px;}
 .faq-item{background:var(--g1);border:1px solid var(--bdr);border-radius:3px;padding:14px;}
 .faq-item strong{display:block;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:1px;color:var(--w);margin-bottom:6px;}
 .faq-item span{font-size:11px;color:var(--mut);line-height:1.7;font-weight:300;}
+.script-grid{display:grid;grid-template-columns:1fr .9fr;gap:14px;align-items:start;}
+.script-output{background:linear-gradient(145deg,rgba(232,25,44,0.08),rgba(20,20,20,0.98));border:1px solid rgba(232,25,44,0.22);border-radius:4px;padding:18px;position:sticky;top:92px;}
+.script-block{background:rgba(240,235,227,0.035);border:1px solid var(--bdr);border-radius:3px;padding:13px 14px;margin-top:10px;}
+.script-kicker{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
+.script-copy{font-size:12px;color:var(--w);line-height:1.8;font-weight:300;white-space:pre-wrap;}
+.script-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px;}
+.script-chip{border:1px solid var(--bdr);background:rgba(240,235,227,0.03);border-radius:3px;padding:10px 8px;text-align:center;}
+.script-chip strong{display:block;font-family:'Oswald',sans-serif;font-size:11px;color:var(--w);letter-spacing:1px;margin-bottom:3px;}
+.script-chip span{font-size:9px;color:var(--mut);line-height:1.45;}
+@media(max-width:760px){.script-grid{grid-template-columns:1fr}.script-output{position:static}.script-mini{grid-template-columns:1fr}}
 @media(max-width:760px){.path-grid{grid-template-columns:1fr}.rod-stat-grid{grid-template-columns:1fr 1fr 1fr}.rec-card{align-items:flex-start}.rec-name{font-size:21px}}
 `;
 
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const PACKAGES=[
-  {tier:"Foundation",name:"GRIND",price:480,feat:false,consult:true,checkoutKey:"grind_full",splitCheckoutKey:"grind_split",
+  {tier:"Foundation",name:"GRIND",price:480,weeklyPrice:120,feat:false,consult:true,checkoutKey:"grind_full",weeklyCheckoutKey:"grind_weekly",splitCheckoutKey:"grind_split",
    desc:"Transformation essentials. Custom programs, meal prep, weekly accountability.",
    items:["Custom Monthly Workout","AI Meal Plan","Weekly Check-ins","Video Library","10 Meal Preps/Month","$75 Consult Included"]},
-  {tier:"Most Popular",name:"HUSTLE",price:550,feat:true,badge:"BEST VALUE",consult:true,checkoutKey:"hustle_full",splitCheckoutKey:"hustle_split",
+  {tier:"Most Popular",name:"HUSTLE",price:550,weeklyPrice:138,feat:true,badge:"BEST VALUE",consult:true,checkoutKey:"hustle_full",weeklyCheckoutKey:"hustle_weekly",splitCheckoutKey:"hustle_split",
    desc:"Fitness + business. Get in shape and start earning from fitness.",
    items:["Everything in Grind","Trainer Certification","Client Templates","Lead Gen Training","Monthly 1-on-1 Call","$75 Consult Included"]},
-  {tier:"Elite",name:"EMPIRE",price:1500,feat:false,checkoutKey:"empire_full",splitCheckoutKey:"empire_split",
+  {tier:"Elite",name:"EMPIRE",price:1500,weeklyPrice:375,feat:false,checkoutKey:"empire_full",weeklyCheckoutKey:"empire_weekly",splitCheckoutKey:"empire_split",
    desc:"The full system. Body, brand, certification, real clients, real leads.",
    items:["Everything in Hustle","Weekly 1-on-1 Coaching","Real Leads Monthly","Revenue Share","Custom Brand Kit","Mentorship Under Rod"]},
 ];
@@ -386,10 +445,16 @@ const STARTER_MEAL_PLAN=[
   {meal:"Dinner",food:"Salmon, sweet potato, asparagus",macros:"42P / 40C / 14F"},
 ];
 const TRANSFORMS=[
-  {name:"Marcus T.",result:"Lost 38 lbs — 90 days",pkg:"HUSTLE",b:"😐",a:"🔥",t:"90 days"},
-  {name:"DeShawn R.",result:"Gained 18 lbs muscle",pkg:"EMPIRE",b:"😤",a:"⚡",t:"4 months"},
-  {name:"Keisha M.",result:"Down 2 dress sizes",pkg:"GRIND",b:"🌱",a:"💎",t:"60 days"},
-  {name:"Jordan P.",result:"6-pack in 12 weeks",pkg:"HUSTLE",b:"😑",a:"🏆",t:"12 weeks"},
+  {name:"Marcus T.",result:"Lost 38 lbs — 90 days",pkg:"HUSTLE",visual:"fatloss",t:"90 days"},
+  {name:"DeShawn R.",result:"Gained 18 lbs muscle",pkg:"EMPIRE",visual:"muscle",t:"4 months"},
+  {name:"Keisha M.",result:"Down 2 dress sizes",pkg:"GRIND",visual:"tone",t:"60 days"},
+  {name:"Jordan P.",result:"6-pack in 12 weeks",pkg:"HUSTLE",visual:"abs",t:"12 weeks"},
+];
+const TRANSFORMATION_STORIES=[
+  {name:"Marcus T.",result:"Major weight cut",pkg:"HUSTLE",time:"90 days",visual:"fatloss",focus:"Fat loss, food discipline, weekly check-ins",quote:"I stopped guessing. Rod gave me the meals, the workouts, and the pressure to stay locked in when I wanted to freestyle."},
+  {name:"Keisha M.",result:"Down 2 dress sizes",pkg:"GRIND",time:"60 days",visual:"tone",focus:"Meal structure, habit consistency, training rhythm",quote:"The biggest change was having somebody check the details every week. I finally knew what to eat and what to fix."},
+  {name:"DeShawn R.",result:"Visible lean mass added",pkg:"EMPIRE",time:"4 months",visual:"muscle",focus:"Muscle gain, trainer certification, business prep",quote:"Empire gave me more than workouts. I built my body, got certified, and learned how to talk to real clients."},
+  {name:"Jordan P.",result:"6-pack in 12 weeks",pkg:"HUSTLE",time:"12 weeks",visual:"abs",focus:"Leaning out, core definition, training consistency",quote:"The structure made the difference. I had the plan, the food targets, and the workouts lined up instead of guessing every week."},
 ];
 const REVIEWS=[
   {name:"Marcus T.",stars:5,text:"Rod don't play. Week 3 people were asking what I was doing different. The meal prep system alone is worth it.",pkg:"HUSTLE",date:"2 weeks ago"},
@@ -438,6 +503,13 @@ const FAQS=[
   ["How fast do people see results?","Most progress comes from consistency in the first few weeks: meals, training, check-ins, and adjustments. The system is built to remove guessing."],
   ["How does Rod operate?","Direct, structured, and accountability-heavy. If you disappear, skip check-ins, or freestyle the plan, the result slows down."],
 ];
+const DEFAULT_LEAD_SCRIPT={
+  audience:"busy adults and aspiring trainers who want structure, accountability, and a clear path instead of guessing alone",
+  result:"drop body fat, build lean muscle, lock in meals, and turn fitness interest into real client opportunities",
+  offer:"a free 7-day meal plan and a $75 strategy consult that gets credited when they join a package",
+  proof:"Rod gives direct coaching, meal structure, weekly check-ins, trainer certification support, and lead-gen training through GRIND, HUSTLE, and EMPIRE",
+  nextStep:"enter your email for the meal plan, then book the $75 consult so Rod can map the right package and next move",
+};
 const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 const TIMES=["6:00 AM","7:00 AM","8:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM","7:00 PM","8:00 PM"];
@@ -563,8 +635,8 @@ export default function App(){
   },[]);
 
   const pages=[
-    ["home","Home"],["consult","$75 Consult"],["packages","Packages"],["compare","Compare"],
-    ["train","Train"],["meals","Meals"],["mealgen","Free Meal Plan"],["sessions","1-on-1 Sessions"],["book","Book"],
+    ["home","Home"],["script","Lead Script"],["consult","$75 Consult"],["packages","Packages"],["compare","Compare"],
+    ["transformations","Transformations"],["train","Train"],["meals","Meals"],["mealgen","Free Meal Plan"],["sessions","1-on-1 Sessions"],["book","Book"],
     ["checkin","Daily Check-In"],["habits","Habits"],["goals","Goals"],["messages","Messages"],
     ["videos","Videos"],["blog","Blog"],
     ["loyalty","Loyalty"],["leaderboard","Leaderboard"],
@@ -590,9 +662,11 @@ export default function App(){
     </div>
     <div className="page">
       {page==="home"&&<HomePage setPage={setPage} showToast={showToast}/>}
+      {page==="script"&&<LeadScriptPage setPage={setPage} showToast={showToast}/>}
       {page==="consult"&&<ConsultPage setPage={setPage} showToast={showToast}/>}
       {page==="packages"&&<PackagesPage setPage={setPage} showToast={showToast}/>}
       {page==="compare"&&<ComparePage setPage={setPage}/>}
+      {page==="transformations"&&<TransformationsPage setPage={setPage} showToast={showToast}/>}
       {page==="train"&&<TrainPage/>}
       {page==="meals"&&<MealsPage showToast={showToast}/>}
       {page==="mealgen"&&<MealPlanGeneratorPage showToast={showToast}/>}
@@ -716,9 +790,9 @@ function HomePage({setPage,showToast}){
       <div className="hcon" style={{animation:"up 0.45s ease forwards"}}>
         <div className="htag"><span className="hd"/>Bodies by Rod · R.O.D. — Ready On Demand</div>
         <h1 className="hh1">BUILD<br/>YOUR<br/><span className="r">BODY.</span><br/>BUILD<br/>YOUR<br/><span className="r">BAG.</span></h1>
-        <p className="hsub">Ready On Demand — elite training, real certification, and real leads whenever you need them. Daily accountability. Split payments. Loyalty rewards. The full system built for people who are serious.</p>
+        <p className="hsub">For busy adults and aspiring trainers who are tired of guessing. Bodies by Rod helps you build the body, meal structure, accountability, and client-getting system. Start with the free plan, then book the $75 consult so Rod can map your next move.</p>
         <div className="hbtns">
-          <button className="bp" onClick={()=>setPage("qualify")}>See If You Qualify</button>
+          <button className="bp" onClick={()=>setPage("script")}>Build My Lead Plan</button>
           <button className="bs" onClick={()=>setPage("consult")}>Book $75 Consult</button>
         </div>
         {!lmDone?(
@@ -756,8 +830,8 @@ function HomePage({setPage,showToast}){
       <div className="path-grid">
         <div className="path-panel">
           <div className="stag" style={{marginBottom:4}}>New Here?</div>
-          <div className="path-title">THE SITE SHOULD MOVE YOU.</div>
-          <p className="path-copy">If you already know what you want, go straight to checkout. If you are new, start with the lane that sounds like you. Bodies by Rod is built to turn attention into a meal plan, a consult, a package, or a follow-up Rod can act on.</p>
+          <div className="path-title">THE SITE SHOULD QUALIFY YOU.</div>
+          <p className="path-copy">This page is built to make the next step obvious: get a free meal plan if you want a fast win, book the $75 consult if you need Rod to diagnose the plan, or choose a package if you already know you need structure.</p>
           <div className="start-options">
             {START_PATHS.map(path=>(
               <button key={path.id} className="start-card" onClick={()=>setPage(path.page)}>
@@ -842,8 +916,8 @@ function HomePage({setPage,showToast}){
       <div className="g4">{TRANSFORMS.map((t,i)=>(
         <div key={i} className="trans-card">
           <div className="trans-imgs">
-            <div className="tbefore"><div style={{fontSize:38,opacity:0.5}}>{t.b}</div><div className="tlabel">Before</div></div>
-            <div className="tafter"><div style={{fontSize:38}}>{t.a}</div><div className="tlabel">After</div></div>
+            <div className={`tbefore ${t.visual}`}><div className="tlabel">Before</div></div>
+            <div className={`tafter ${t.visual}`}><div className="tlabel">After</div></div>
           </div>
           <div style={{padding:"11px 13px"}}>
             <div style={{fontFamily:"'Oswald',sans-serif",fontSize:13,fontWeight:600,color:"var(--w)",marginBottom:2}}>{t.name}</div>
@@ -852,7 +926,7 @@ function HomePage({setPage,showToast}){
           </div>
         </div>
       ))}</div>
-      <div className="proof-note">Next upgrade for this section: replace these placeholders with approved client before/after photos, real reviews, and video proof from the admin dashboard. Every result should show the package, timeline, and what changed.</div>
+      <div className="proof-note">Approved client submissions can replace these transformation examples from the review queue. Every result should show the package, timeline, and what changed.</div>
     </div>
 
     <div className="sec" style={{paddingTop:0}}>
@@ -888,6 +962,201 @@ function HomePage({setPage,showToast}){
       <button className="bs" style={{borderColor:"rgba(255,255,255,0.4)",color:"#fff"}} onClick={()=>setPage("consult")}>Book My $75 Consult →</button>
     </div>
   </>);
+}
+
+function LeadScriptPage({setPage,showToast}){
+  const [form,setForm]=useState(DEFAULT_LEAD_SCRIPT);
+  const [name,setName]=useState("");
+  const [email,setEmail]=useState("");
+  const [done,setDone]=useState(false);
+
+  const update=(key,value)=>setForm(prev=>({...prev,[key]:value}));
+  const headline=`Bodies by Rod is for ${form.audience}.`;
+  const script=`I help ${form.audience} ${form.result}. The way we start is simple: ${form.offer}. From there, ${form.proof}. If you want help instead of guessing, ${form.nextStep}.`;
+  const cta=`Want the plan built around your body, schedule, and goals? ${form.nextStep}.`;
+
+  const submit=async()=>{
+    try{
+      await submitNetlifyForm("lead-strategy-script", {
+        name: name.trim(),
+        email: email.trim(),
+        audience: form.audience.trim(),
+        result: form.result.trim(),
+        offer: form.offer.trim(),
+        proof: form.proof.trim(),
+        next_step: form.nextStep.trim(),
+        generated_script: script,
+        source: "Lead Script Builder",
+        status: "strategy-created",
+      });
+      captureConversion("lead-script-created", {
+        name: name.trim(),
+        email: email.trim(),
+        source: "Lead Script Builder",
+        status: "strategy-created",
+      }).catch(console.error);
+      setDone(true);
+      showToast("Lead script saved. Use it on the page, DMs, calls, and ads.");
+    }catch(e){
+      console.error(e);
+      showToast("Lead script could not be saved. Try again.");
+    }
+  };
+
+  return(<div className="sec" style={{maxWidth:980}}>
+    <div className="stag">Lead Generation Script</div><h2 className="sh2">WHO IT IS FOR.<br/>WHAT THEY GET.<br/>WHAT COMES NEXT.</h2>
+    <p className="sbody">Use this to tighten the message before buying ads or sending outreach. The script should make one person feel seen, promise one concrete outcome, and send them to one next step.</p>
+    <div className="script-grid">
+      <div className="card">
+        <div className="card-hdr"><span className="card-title">Clarify The Offer</span></div>
+        <div className="card-body">
+          <div className="g2" style={{marginBottom:12}}>
+            <div><div className="lbl">Your name</div><input className="inp" value={name} onChange={e=>setName(e.target.value)} placeholder="Rod or team member"/></div>
+            <div><div className="lbl">Follow-up email</div><input className="inp" value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" type="email"/></div>
+          </div>
+          <div style={{display:"grid",gap:12}}>
+            <div><div className="lbl">Who is this for?</div><textarea className="ta" value={form.audience} onChange={e=>update("audience",e.target.value)} /></div>
+            <div><div className="lbl">What result should it create?</div><textarea className="ta" value={form.result} onChange={e=>update("result",e.target.value)} /></div>
+            <div><div className="lbl">What is the compelling offer?</div><textarea className="ta" value={form.offer} onChange={e=>update("offer",e.target.value)} /></div>
+            <div><div className="lbl">Why should they believe it?</div><textarea className="ta" value={form.proof} onChange={e=>update("proof",e.target.value)} /></div>
+            <div><div className="lbl">What should the visitor do next?</div><textarea className="ta" value={form.nextStep} onChange={e=>update("nextStep",e.target.value)} /></div>
+          </div>
+          <div style={{display:"flex",gap:10,flexWrap:"wrap",marginTop:14}}>
+            <button className="btn btn-gold" onClick={submit}>Save Lead Script</button>
+            <button className="btn btn-ol" onClick={()=>setPage("consult")}>Book Consult</button>
+          </div>
+          {done&&<div className="promo-active" style={{marginTop:12}}>Saved. The same message now works as a homepage intro, ad hook, DM opener, and consult opener.</div>}
+        </div>
+      </div>
+      <div className="script-output">
+        <h3 style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:28,lineHeight:1,color:"var(--w)",marginBottom:10}}>{headline}</h3>
+        <div className="script-block"><div className="script-kicker">Short Pitch</div><div className="script-copy">{script}</div></div>
+        <div className="script-block"><div className="script-kicker">Landing Page CTA</div><div className="script-copy">{cta}</div></div>
+        <div className="script-mini">
+          <div className="script-chip"><strong>Target</strong><span>One clear customer</span></div>
+          <div className="script-chip"><strong>Offer</strong><span>One low-friction reason</span></div>
+          <div className="script-chip"><strong>Follow-up</strong><span>One next action</span></div>
+        </div>
+      </div>
+    </div>
+  </div>);
+}
+
+// ─── TRANSFORMATIONS ──────────────────────────────────────────────────────────
+function TransformationsPage({setPage,showToast}){
+  const [form,setForm]=useState({name:"",email:"",pkg:"GRIND",timeframe:"",result:"",story:"",instagram:"",consent:false});
+  const [beforeFile,setBeforeFile]=useState(null);
+  const [afterFile,setAfterFile]=useState(null);
+  const [done,setDone]=useState(false);
+  const [loading,setLoading]=useState(false);
+  const update=(key,value)=>setForm(prev=>({...prev,[key]:value}));
+
+  const submit=async(e)=>{
+    e.preventDefault();
+    if(loading)return;
+    if(!form.name.trim()||!form.email.trim()||!form.result.trim()||!form.story.trim()||!form.consent){
+      showToast("Add your name, email, result, story, and publishing consent.");
+      return;
+    }
+    const data=new FormData();
+    data.append("form-name","transformation-submission");
+    data.append("name",form.name.trim());
+    data.append("email",form.email.trim());
+    data.append("package",form.pkg);
+    data.append("timeframe",form.timeframe.trim());
+    data.append("result",form.result.trim());
+    data.append("story",form.story.trim());
+    data.append("instagram",form.instagram.trim());
+    data.append("consent",form.consent?"yes":"no");
+    data.append("source","Transformation Wall");
+    data.append("status","pending-review");
+    data.append("bot-field","");
+    if(beforeFile)data.append("before_photo",beforeFile);
+    if(afterFile)data.append("after_photo",afterFile);
+    try{
+      setLoading(true);
+      await submitNetlifyMultipartForm(data);
+      captureConversion("transformation-submitted", {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        package: form.pkg,
+        value: form.result.trim(),
+        status: "pending-review",
+        source: "Transformation Wall",
+      }).catch(console.error);
+      setDone(true);
+      showToast("Transformation submitted for review.");
+    }catch(err){
+      console.error(err);
+      showToast("Transformation could not be submitted. Try again.");
+    }finally{
+      setLoading(false);
+    }
+  };
+
+  return(<div className="sec" style={{maxWidth:1120}}>
+    <div className="stag">Client Transformations</div><h2 className="sh2">PROOF PEOPLE<br/>CAN FEEL.</h2>
+    <p className="sbody">Approved client stories live here so new visitors can see the work, the timeline, and the kind of support behind the result. Submit yours below and Rod reviews it before it goes public.</p>
+    <div className="trans-wall">
+      <div style={{display:"grid",gap:14}}>
+        {TRANSFORMATION_STORIES.map((story,i)=>(
+          <div className="story-card" key={story.name}>
+            <div className="story-head">
+              <div>
+                <div className="story-name">{story.name}</div>
+                <div className="story-result">{story.result} · {story.time}</div>
+              </div>
+              <span className={`badge ${story.pkg==="EMPIRE"?"badge-red":story.pkg==="HUSTLE"?"badge-gold":"badge-green"}`}>{story.pkg}</span>
+            </div>
+            <div className="proof-strip">
+              <div className={`proof-tile ${story.visual}-before`}><span>Before</span></div>
+              <div className={`proof-tile after ${story.visual}-after`}><span>After</span></div>
+            </div>
+            <div style={{fontFamily:"'Oswald',sans-serif",fontSize:10,letterSpacing:2,textTransform:"uppercase",color:"var(--gold)",marginBottom:6}}>{story.focus}</div>
+            <div className="story-copy">"{story.quote}"</div>
+          </div>
+        ))}
+        <div className="proof-note">New submissions are held for review before being posted. That keeps the wall clean, consent-based, and focused on real Bodies by Rod results.</div>
+      </div>
+      <div className="submit-panel">
+        {done?(
+          <div style={{textAlign:"center",padding:"22px 4px"}}>
+            <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:24,color:"var(--red)",marginBottom:7}}>STORY SENT</div>
+            <div style={{fontSize:12,color:"var(--mut)",lineHeight:1.7,marginBottom:14}}>Rod reviews every transformation before it goes live. If approved, it can be featured on this page.</div>
+            <button className="btn btn-full" onClick={()=>setPage("packages")}>See Packages</button>
+          </div>
+        ):(
+          <form name="transformation-submission" method="POST" data-netlify="true" netlify-honeypot="bot-field" encType="multipart/form-data" onSubmit={submit}>
+            <input type="hidden" name="form-name" value="transformation-submission"/>
+            <p style={{display:"none"}}><label>Do not fill this out <input name="bot-field"/></label></p>
+            <div className="script-kicker">Submit Your Result</div>
+            <div style={{display:"grid",gap:11}}>
+              <div className="g2">
+                <div><div className="lbl">Name *</div><input className="inp" name="name" value={form.name} onChange={e=>update("name",e.target.value)} placeholder="First name"/></div>
+                <div><div className="lbl">Email *</div><input className="inp" name="email" type="email" value={form.email} onChange={e=>update("email",e.target.value)} placeholder="you@example.com"/></div>
+              </div>
+              <div className="g2">
+                <div><div className="lbl">Package</div><select className="sel" name="package" value={form.pkg} onChange={e=>update("pkg",e.target.value)}>{["GRIND","HUSTLE","EMPIRE","1-on-1 Sessions","Meal Prep"].map(o=><option key={o}>{o}</option>)}</select></div>
+                <div><div className="lbl">Timeframe</div><input className="inp" name="timeframe" value={form.timeframe} onChange={e=>update("timeframe",e.target.value)} placeholder="90 days, 6 weeks, etc."/></div>
+              </div>
+              <div><div className="lbl">Result *</div><input className="inp" name="result" value={form.result} onChange={e=>update("result",e.target.value)} placeholder="Lost 22 lbs, gained muscle, got certified"/></div>
+              <div><div className="lbl">Your Story *</div><textarea className="ta" name="story" value={form.story} onChange={e=>update("story",e.target.value)} placeholder="What changed? What helped most? What would you tell somebody thinking about starting?"/></div>
+              <div><div className="lbl">Instagram / Tag</div><input className="inp" name="instagram" value={form.instagram} onChange={e=>update("instagram",e.target.value)} placeholder="@yourhandle or leave blank"/></div>
+              <div className="g2">
+                <div className="file-row"><div className="lbl">Before Photo</div><input name="before_photo" type="file" accept="image/*" onChange={e=>setBeforeFile(e.target.files?.[0]||null)}/></div>
+                <div className="file-row"><div className="lbl">After Photo</div><input name="after_photo" type="file" accept="image/*" onChange={e=>setAfterFile(e.target.files?.[0]||null)}/></div>
+              </div>
+              <label style={{display:"flex",gap:9,alignItems:"flex-start",fontSize:11,color:"var(--mut)",lineHeight:1.55}}>
+                <input name="consent" type="checkbox" checked={form.consent} onChange={e=>update("consent",e.target.checked)} style={{marginTop:2}}/>
+                I give Bodies by Rod permission to review and publish this transformation, including submitted photos and story details.
+              </label>
+              <button className="btn btn-full" disabled={loading||!form.consent}>{loading?"Submitting...":"Submit For Review"}</button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  </div>);
 }
 
 // ─── CONSULT ──────────────────────────────────────────────────────────────────
@@ -1030,7 +1299,7 @@ function PackagesPage({setPage,showToast}){
       <div style={{fontSize:18,flexShrink:0}}>💳</div>
       <div>
         <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:2,color:"var(--gold)",textTransform:"uppercase",marginBottom:3}}>Secure Stripe Checkout</div>
-        <div style={{fontSize:12,color:"var(--mut)",fontWeight:300,lineHeight:1.65}}>GRIND, HUSTLE, and EMPIRE use the package Price IDs from your Stripe account.</div>
+        <div style={{fontSize:12,color:"var(--mut)",fontWeight:300,lineHeight:1.65}}>GRIND, HUSTLE, and EMPIRE are for clients ready to commit. Pick the monthly, weekly, or split-pay option that matches your next move.</div>
       </div>
     </div>
     <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(270px,1fr))",gap:14}}>
@@ -1050,7 +1319,7 @@ function PackagesPage({setPage,showToast}){
               <span style={{color:"var(--red)",fontSize:11,flexShrink:0}}>✓</span>{f}
             </li>
           ))}</ul>
-          <button className={`btn btn-full ${p.feat?"":"btn-ol"}`} onClick={async()=>{
+          <button className={`btn btn-full ${p.feat?"":"btn-ol"}`} style={{marginTop:8}} onClick={async()=>{
             captureConversion("package-checkout-click", {
               package: p.name,
               payment_mode: "monthly",
@@ -1074,6 +1343,33 @@ function PackagesPage({setPage,showToast}){
             }
           }}>
             🔒 {p.consult?"Pay & Book Consult":"Pay Securely with Stripe"}
+          </button>
+          <button className="btn btn-full btn-gold" style={{marginTop:8}} onClick={async()=>{
+            captureConversion("package-checkout-click", {
+              package: p.name,
+              payment_mode: "weekly",
+              value: String(p.weeklyPrice),
+              weekly_value: String(p.weeklyPrice),
+              monthly_value: String(p.price),
+            }).catch(console.error);
+            try{
+              showToast("Redirecting to weekly payment checkout...");
+              await startStripeCheckout({
+                itemKey:p.weeklyCheckoutKey,
+                metadata:{
+                  package:p.name,
+                  payment_mode:"weekly",
+                  value:String(p.weeklyPrice),
+                  weekly_value:String(p.weeklyPrice),
+                  monthly_value:String(p.price),
+                },
+              });
+            }catch(error){
+              console.error(error);
+              showToast(error.message||"Weekly checkout is not ready yet.");
+            }
+          }}>
+            Start Weekly · ${p.weeklyPrice.toLocaleString()}/wk
           </button>
           <button className="btn btn-full btn-ol" style={{marginTop:8}} onClick={async()=>{
             const splitAmount=Math.ceil(p.price/2);
@@ -1101,6 +1397,9 @@ function PackagesPage({setPage,showToast}){
           }}>
             Split Payment · Pay ${Math.ceil(p.price/2).toLocaleString()} Today
           </button>
+          <div style={{fontSize:9,color:"var(--mut)",textAlign:"center",marginTop:6,lineHeight:1.5}}>
+            Weekly keeps the package active with smaller recurring payments.
+          </div>
           <div style={{display:"flex",justifyContent:"center",gap:5,marginTop:6,flexWrap:"wrap"}}>
             {["Visa","MC","Amex","Apple Pay"].map(c=>(
               <span key={c} style={{fontSize:8,color:"var(--mut)",background:"var(--g3)",padding:"2px 6px",borderRadius:1,fontFamily:"'Oswald',sans-serif",letterSpacing:1}}>{c}</span>
@@ -2893,15 +3192,24 @@ function StreakCounter({streak=7,habits=5,checkins=12}){
 // 1. Go to dashboard.stripe.com and log in
 // 2. Create Products + Prices for each checkout item:
 //    - "GRIND Monthly Subscription" (recurring, $480/month)
+//    - "GRIND Weekly Subscription" (recurring, $120/week)
 //    - "GRIND Split Payment" (one-time, first half)
 //    - "HUSTLE Monthly Subscription" (recurring, $550/month)
+//    - "HUSTLE Weekly Subscription" (recurring, $138/week)
 //    - "HUSTLE Split Payment" (one-time, first half)
 //    - "EMPIRE Monthly Subscription" (recurring, $1,500/month)
+//    - "EMPIRE Weekly Subscription" (recurring, $375/week)
 //    - "EMPIRE Split Payment" (one-time, first half)
+//    - Single session prices for online, in-person, and strategy check-in
+//    - Recurring 1x, 2x, 3x, and 4x weekly session plans for each session type
+//    - Checkout can apply a 7-day subscription trial when the app sends
+//      trialDays: 7. Keep that reserved for low-ticket template offers.
 // 3. Copy each Stripe Price ID and add it to Netlify environment variables:
 //    STRIPE_SECRET_KEY, STRIPE_PRICE_GRIND, STRIPE_PRICE_HUSTLE,
-//    STRIPE_PRICE_EMPIRE, STRIPE_PRICE_GRIND_SPLIT,
-//    STRIPE_PRICE_HUSTLE_SPLIT, STRIPE_PRICE_EMPIRE_SPLIT
+//    STRIPE_PRICE_EMPIRE, STRIPE_PRICE_GRIND_WEEKLY, STRIPE_PRICE_HUSTLE_WEEKLY,
+//    STRIPE_PRICE_EMPIRE_WEEKLY, STRIPE_PRICE_GRIND_SPLIT,
+//    STRIPE_PRICE_HUSTLE_SPLIT, STRIPE_PRICE_EMPIRE_SPLIT, and the session
+//    Price IDs listed in netlify/functions/create-checkout-session.mts
 // 4. Stripe automatically handles card storage, receipts, and recurring billing.
 // NOTE: Stripe charges 2.9% + $0.30 per transaction
 
@@ -2909,7 +3217,10 @@ function StreakCounter({streak=7,habits=5,checkins=12}){
 function SessionsPage({setPage,showToast}){
   const [sessionType,setSessionType]=useState("online");
   const [platform,setPlatform]=useState("FaceTime");
-  const [frequency,setFrequency]=useState("2x");
+  const [frequency,setFrequency]=useState("1x");
+  const [sessionGoal,setSessionGoal]=useState("steady");
+  const [sessionSchedule,setSessionSchedule]=useState("one");
+  const [sessionBudget,setSessionBudget]=useState("low");
   const [name,setName]=useState("");
   const [email,setEmail]=useState("");
   const [step,setStep]=useState(1);
@@ -2919,6 +3230,8 @@ function SessionsPage({setPage,showToast}){
       name:"Online 1-on-1",
       icon:"💻",
       price:45,
+      singleCheckoutKey:"session_online_single",
+      monthlyCheckoutKeys:{ "1x":"session_online_1x", "2x":"session_online_2x", "3x":"session_online_3x", "4x":"session_online_4x" },
       desc:"FaceTime, Zoom, or Google Meet — train from anywhere",
       platforms:["FaceTime","Zoom","Google Meet"],
       color:"var(--gold)"
@@ -2927,6 +3240,8 @@ function SessionsPage({setPage,showToast}){
       name:"In-Person 1-on-1",
       icon:"🏋️",
       price:60,
+      singleCheckoutKey:"session_inperson_single",
+      monthlyCheckoutKeys:{ "1x":"session_inperson_1x", "2x":"session_inperson_2x", "3x":"session_inperson_3x", "4x":"session_inperson_4x" },
       desc:"At the gym or your location — hands-on coaching",
       platforms:["Location TBD"],
       color:"var(--red)"
@@ -2935,6 +3250,8 @@ function SessionsPage({setPage,showToast}){
       name:"Strategy Check-In",
       icon:"📞",
       price:30,
+      singleCheckoutKey:"session_checkin_single",
+      monthlyCheckoutKeys:{ "1x":"session_checkin_1x", "2x":"session_checkin_2x", "3x":"session_checkin_3x", "4x":"session_checkin_4x" },
       desc:"30 min phone call — accountability, adjustments, Q&A",
       platforms:["Phone Call"],
       color:"var(--green)"
@@ -2942,14 +3259,77 @@ function SessionsPage({setPage,showToast}){
   };
 
   const frequencyOptions=[
-    {val:"2x",label:"2x per week",sessions:8,monthlyTotal:360},
-    {val:"3x",label:"3x per week",sessions:12,monthlyTotal:540},
-    {val:"4x",label:"4x per week",sessions:16,monthlyTotal:720},
+    {val:"1x",label:"1x per week",sessions:4},
+    {val:"2x",label:"2x per week",sessions:8},
+    {val:"3x",label:"3x per week",sessions:12},
+    {val:"4x",label:"4x per week",sessions:16},
   ];
 
   const current=sessions[sessionType];
   const freqData=frequencyOptions.find(f=>f.val===frequency);
   const monthlyTotal=current.price*freqData.sessions;
+  const sessionFinderOptions={
+    goal:[
+      {id:"try",label:"Test The Fit",copy:"I want one session or a light start before I commit."},
+      {id:"steady",label:"Stay Consistent",copy:"I need weekly coaching, accountability, and form checks."},
+      {id:"change",label:"Change Fast",copy:"I want more hands-on support and faster correction."},
+    ],
+    schedule:[
+      {id:"one",label:"1 Day",copy:"One locked-in training day each week."},
+      {id:"two",label:"2 Days",copy:"Enough rhythm to build momentum."},
+      {id:"three",label:"3+ Days",copy:"I can train often and want tighter coaching."},
+    ],
+    budget:[
+      {id:"low",label:"Lowest Start",copy:"Keep the first step affordable."},
+      {id:"medium",label:"Balanced",copy:"Spend enough to stay accountable."},
+      {id:"high",label:"All In",copy:"Invest for the fastest practical support."},
+    ]
+  };
+  const getSessionRec=()=>{
+    if(sessionGoal==="try")return {mode:"single",frequency:"1x",name:"Buy 1 Session",price:current.price,copy:"Best when someone needs to meet Rod, feel the coaching style, and remove risk before a monthly plan."};
+    if(sessionGoal==="change"||sessionSchedule==="three"||sessionBudget==="high")return {mode:"monthly",frequency:"3x",name:"3x Per Week",price:current.price*12,copy:"Best for faster results because Rod gets more chances to correct training, effort, and consistency."};
+    if(sessionSchedule==="two"||sessionBudget==="medium")return {mode:"monthly",frequency:"2x",name:"2x Per Week",price:current.price*8,copy:"Best middle ground: enough accountability to build momentum without jumping straight into the highest plan."};
+    return {mode:"monthly",frequency:"1x",name:"1x Per Week",price:current.price*4,copy:"Best starter plan for someone who wants weekly structure, lower commitment, and a clear path to upgrade."};
+  };
+  const sessionRec=getSessionRec();
+  const starterLadder=[
+    {kicker:"Lowest Risk",name:"One Session",price:`$${current.price}`,copy:"Best when the client wants to meet Rod, feel the coaching style, and decide after one paid session.",tag:"Try Rod"},
+    {kicker:"Easy Start",name:"1x Weekly",price:`$${current.price*4}/mo`,copy:"Best for someone who needs a weekly appointment, form checks, and a lower-commitment way to start.",tag:"4/mo",featured:frequency==="1x"},
+    {kicker:"Steady Change",name:"2x Weekly",price:`$${current.price*8}/mo`,copy:"Best balance for body change because Rod sees the client often enough to correct effort and consistency.",tag:"8/mo",featured:frequency==="2x"},
+    {kicker:"Fast Correction",name:"3x Weekly",price:`$${current.price*12}/mo`,copy:"Best for serious clients who want more hands-on coaching, tighter accountability, and faster adjustments.",tag:"12/mo",featured:frequency==="3x"},
+  ];
+  const applySessionRec=()=>{
+    if(sessionRec.mode==="monthly")setFrequency(sessionRec.frequency);
+    showToast(`${sessionRec.name} selected as the best starting point.`);
+    setStep(2);
+  };
+  const startSessionCheckout=async({mode})=>{
+    const isSingle=mode==="single";
+    const value=isSingle?current.price:monthlyTotal;
+    const stage=isSingle?"session-single-checkout-click":"session-package-checkout-click";
+    const metadata={
+      name:name.trim(),
+      email:email.trim(),
+      session_type:current.name,
+      platform,
+      payment_mode:isSingle?"single_session":"monthly_sessions",
+      value:String(value),
+      sessions_per_month:isSingle?"1":String(freqData.sessions),
+      monthly_value:isSingle?"":String(monthlyTotal),
+    };
+    captureConversion(stage,metadata).catch(console.error);
+    try{
+      showToast(isSingle?"Redirecting to single session checkout...":"Redirecting to monthly session checkout...");
+      await startStripeCheckout({
+        itemKey:isSingle?current.singleCheckoutKey:current.monthlyCheckoutKeys[frequency],
+        email,
+        metadata,
+      });
+    }catch(error){
+      console.error(error);
+      showToast(error.message||"Session checkout is not ready yet.");
+    }
+  };
 
   const handleBook=async()=>{
     if(!platform||!name.trim()||!email.trim())return;
@@ -2984,9 +3364,52 @@ function SessionsPage({setPage,showToast}){
   return(<div className="sec">
     <div className="stag">1-on-1 Coaching</div>
     <h2 className="sh2">TRAIN WITH ROD.<br/>YOUR WAY.</h2>
-    <p className="sbody">Online or in-person. Pay per session or commit monthly. Start with one session. Scale as you grow. No contracts.</p>
+    <p className="sbody">Online or in-person. Buy one session when you want to test the fit, or lock in a weekly rhythm with a monthly session plan.</p>
 
     {step===1&&(<>
+      <div className="quiz-box" style={{marginBottom:18}}>
+        <div style={{fontFamily:"'Oswald',sans-serif",fontSize:12,letterSpacing:2,textTransform:"uppercase",color:"var(--w)",marginBottom:4}}>Find The Right Starting Point</div>
+        <div style={{fontSize:11,color:"var(--mut)",lineHeight:1.7,marginBottom:10}}>Answer three quick questions so the training tab points people to the right first buy.</div>
+        <div className="lbl">Main Goal</div>
+        <div className="quiz-row">{sessionFinderOptions.goal.map(opt=>(
+          <button key={opt.id} className={`quiz-choice ${sessionGoal===opt.id?"on":""}`} onClick={()=>setSessionGoal(opt.id)}>
+            <strong>{opt.label}</strong>{opt.copy}
+          </button>
+        ))}</div>
+        <div className="lbl">Weekly Schedule</div>
+        <div className="quiz-row">{sessionFinderOptions.schedule.map(opt=>(
+          <button key={opt.id} className={`quiz-choice ${sessionSchedule===opt.id?"on":""}`} onClick={()=>setSessionSchedule(opt.id)}>
+            <strong>{opt.label}</strong>{opt.copy}
+          </button>
+        ))}</div>
+        <div className="lbl">Budget Comfort</div>
+        <div className="quiz-row">{sessionFinderOptions.budget.map(opt=>(
+          <button key={opt.id} className={`quiz-choice ${sessionBudget===opt.id?"on":""}`} onClick={()=>setSessionBudget(opt.id)}>
+            <strong>{opt.label}</strong>{opt.copy}
+          </button>
+        ))}</div>
+        <div className="rec-card">
+          <div>
+            <div style={{fontSize:10,color:"var(--mut)",fontFamily:"'Oswald',sans-serif",letterSpacing:2,textTransform:"uppercase",marginBottom:4}}>Recommended Start</div>
+            <div className="rec-name">{sessionRec.name}</div>
+            <div style={{fontSize:11,color:"var(--mut)",lineHeight:1.65,maxWidth:620,marginTop:5}}>{sessionRec.copy}</div>
+          </div>
+          <button className="btn btn-green" onClick={applySessionRec}>{sessionRec.mode==="single"?"Book One":"Use This Plan"} · ${sessionRec.price}</button>
+        </div>
+      </div>
+
+      <div className="start-ladder">
+        {starterLadder.map(item=>(
+          <div key={item.name} className={`ladder-card ${item.featured?"featured":""}`}>
+            <div className="ladder-kicker">{item.kicker}</div>
+            <div className="ladder-name">{item.name}</div>
+            <div className="ladder-price">{item.price}</div>
+            <div className="ladder-copy">{item.copy}</div>
+            <div className="ladder-tag">{item.tag}</div>
+          </div>
+        ))}
+      </div>
+
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:14,marginBottom:18}}>
         {[
           {id:"online",name:"Online 1-on-1",icon:"💻",price:"$45/session",desc:"FaceTime, Zoom, or Google Meet",color:"rgba(212,168,67,0.15)",accent:"var(--gold)"},
@@ -3002,12 +3425,16 @@ function SessionsPage({setPage,showToast}){
         ))}
       </div>
 
+      <div className="proof-note" style={{marginBottom:18}}>
+        Strongest path: use one session when the client is unsure, 1x/week when they need a low-friction start, 2x/week for steady body change, and 3x/week when they want faster correction. Add approved before/after photos or short video reviews here as soon as Rod has the client permission to publish them.
+      </div>
+
       <div style={{background:"var(--g2)",border:"1px solid var(--bdr)",borderRadius:4,padding:16}}>
         <div style={{fontFamily:"'Oswald',sans-serif",fontSize:10,letterSpacing:2,color:"var(--gold)",marginBottom:10}}>HOW IT WORKS</div>
         {[
           {num:"1",title:"Pick Your Session Type",desc:"Online, in-person, or phone check-in"},
-          {num:"2",title:"Choose Your Frequency",desc:"2x minimum, 3x, or 4x per week"},
-          {num:"3",title:"Pay Per Session",desc:"No contracts. Cancel anytime."},
+          {num:"2",title:"Buy One Or Build A Plan",desc:"Pay for one session or choose 1x, 2x, 3x, or 4x per week"},
+          {num:"3",title:"Checkout Securely",desc:"Single sessions and monthly plans use Stripe"},
           {num:"4",title:"Book Your Times",desc:"Live calendar — Rod blocks out his availability"},
           {num:"5",title:"Train with Rod",desc:"FaceTime, Zoom, Google Meet, or in person"},
         ].map((step,i)=>(
@@ -3040,14 +3467,24 @@ function SessionsPage({setPage,showToast}){
             </div>
           </div>
 
+          <div style={{background:"rgba(212,168,67,0.06)",border:"1px solid rgba(212,168,67,0.18)",borderRadius:3,padding:12,marginBottom:16}}>
+            <div style={{display:"flex",justifyContent:"space-between",gap:10,alignItems:"center",flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontFamily:"'Oswald',sans-serif",fontSize:11,letterSpacing:2,textTransform:"uppercase",color:"var(--gold)",marginBottom:3}}>Try One Session</div>
+                <div style={{fontSize:11,color:"var(--mut)",lineHeight:1.6}}>Buy one {current.name.toLowerCase()} session before committing to a package.</div>
+              </div>
+              <div style={{fontFamily:"'Black Han Sans',sans-serif",fontSize:24,color:current.color}}>${current.price}</div>
+            </div>
+          </div>
+
           <div style={{marginBottom:16}}>
-            <div className="lbl">Sessions Per Week</div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:8}}>
+            <div className="lbl">Or Choose Sessions Per Week</div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(120px,1fr))",gap:8}}>
               {frequencyOptions.map(f=>(
                 <div key={f.val} onClick={()=>setFrequency(f.val)} style={{padding:12,borderRadius:3,border:frequency===f.val?`2px solid ${current.color}`:"1px solid var(--bdr)",background:frequency===f.val?current.color+"22":"var(--g3)",cursor:"pointer",textAlign:"center",transition:"all 0.2s"}}>
-                  <div style={{fontFamily:"'Oswald',sans-serif",fontSize:12,color:frequency===f.val?current.color:"var(--mut)",fontWeight:700}}>{f.val}</div>
+                  <div style={{fontFamily:"'Oswald',sans-serif",fontSize:12,color:frequency===f.val?current.color:"var(--mut)",fontWeight:700}}>{f.label}</div>
                   <div style={{fontSize:9,color:"var(--mut)",marginTop:3}}>{f.sessions} sessions/mo</div>
-                  <div style={{fontSize:9,color:current.color,fontFamily:"'Oswald',sans-serif",marginTop:3,fontWeight:700}}>${f.monthlyTotal}/mo</div>
+                  <div style={{fontSize:9,color:current.color,fontFamily:"'Oswald',sans-serif",marginTop:3,fontWeight:700}}>${(current.price*f.sessions).toLocaleString()}/mo</div>
                 </div>
               ))}
             </div>
@@ -3070,8 +3507,11 @@ function SessionsPage({setPage,showToast}){
             <div><div className="lbl">Email *</div><input className="inp" value={email} onChange={e=>setEmail(e.target.value)} placeholder="your@email.com" type="email"/></div>
           </div>
 
-          <button className="btn btn-full" onClick={handleBook} style={{background:current.color}} disabled={!platform||!name.trim()||!email.trim()}>
-            Continue to Checkout →
+          <button className="btn btn-full btn-gold" onClick={()=>startSessionCheckout({mode:"single"})} disabled={!platform||!name.trim()||!email.trim()}>
+            Buy 1 Session · ${current.price}
+          </button>
+          <button className="btn btn-full" onClick={handleBook} style={{background:current.color,marginTop:8}} disabled={!platform||!name.trim()||!email.trim()}>
+            Set Up Monthly Sessions →
           </button>
           <button className="btn btn-ol btn btn-sm" onClick={()=>setStep(1)}>← Back</button>
         </div>
@@ -3088,25 +3528,18 @@ function SessionsPage({setPage,showToast}){
           <strong style={{color:current.color}}>${monthlyTotal}/month</strong><br/>
           <span style={{fontSize:10,marginTop:6,display:"block"}}>Rod will confirm your schedule and payment details.</span>
         </div>
-        <button className="btn btn-full" onClick={()=>{
-          captureConversion("session-package-checkout-click", {
-            name: name.trim(),
-            email: email.trim(),
-            session_type: current.name,
-            platform,
-            frequency,
-            sessions_per_month: String(freqData.sessions),
-            monthly_value: String(monthlyTotal),
-          }).catch(console.error);
+        <button className="btn btn-full" onClick={()=>startSessionCheckout({mode:"monthly"})} style={{background:current.color,marginBottom:8}}>
+          Pay Monthly with Stripe
+        </button>
+        <button className="btn btn-full btn-ol" onClick={()=>{
           showToast("Session request saved. Pick a time on the booking calendar.");
           setPage("book");
-        }} style={{background:current.color,marginBottom:8}}>
-          Continue to Booking
+        }} style={{marginBottom:8}}>
+          Book First, Pay After Rod Confirms
         </button>
         <button className="btn btn-ol btn btn-sm" onClick={()=>setStep(2)}>← Change Details</button>
         <div style={{fontSize:9,color:"var(--mut)",marginTop:10,lineHeight:1.6}}>
-          Payment is handled after Rod confirms your session setup.<br/>
-          Package checkout remains available through Stripe.
+          Stripe checkout starts now, or Rod can confirm schedule first.
         </div>
       </div>
     </div>)}
