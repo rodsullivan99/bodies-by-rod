@@ -19,11 +19,18 @@ const escapeHtml = (value: unknown) =>
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-const getFromEmail = () =>
-  process.env.MEAL_PLAN_FROM_EMAIL ||
-  process.env.RESEND_FROM_EMAIL ||
-  process.env.SENDGRID_FROM_EMAIL ||
-  "Bodies by Rod <mealplans@bodiesbyrod.com>";
+const getFromEmail = () => {
+  const fromEmail =
+    process.env.MEAL_PLAN_FROM_EMAIL ||
+    process.env.RESEND_FROM_EMAIL ||
+    process.env.SENDGRID_FROM_EMAIL;
+
+  if (!fromEmail) {
+    throw new Error("Meal plan sender email is not configured");
+  }
+
+  return fromEmail;
+};
 
 const buildText = (name: string, goal: string, diet: string, meals: Meal[]) => {
   const greeting = name ? `What's up ${name},` : "What's up,";

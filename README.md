@@ -18,4 +18,4 @@ Stripe checkout requires `STRIPE_SECRET_KEY` plus one Stripe Price ID per checko
 
 Each `STRIPE_PRICE_*` value must be a Stripe Price ID that starts with `price_`.
 
-Meal plan emails require either `RESEND_API_KEY` or `SENDGRID_API_KEY`. Optional sender variables are `MEAL_PLAN_FROM_EMAIL`, `RESEND_FROM_EMAIL`, or `SENDGRID_FROM_EMAIL`. If no email provider is configured, the app still captures the lead through Netlify Forms and shows a follow-up message instead of an error.
+Meal plan emails require either `RESEND_API_KEY` or `SENDGRID_API_KEY`. Configure the sender through `MEAL_PLAN_FROM_EMAIL`, `RESEND_FROM_EMAIL`, or `SENDGRID_FROM_EMAIL` in the Netlify environment; do not commit sender addresses to the repository. If no email provider is configured, the app still captures the lead through Netlify Forms and shows a follow-up message instead of an error.
